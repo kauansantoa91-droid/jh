@@ -127,7 +127,7 @@
                     <i class="fa-solid fa-boxes-stacked text-neonBlue"></i> Gerenciador por Múltiplos Arquivos .txt
                 </h2>
                 <p class="text-sm text-gray-400">
-                    Carregue seus arquivos (.txt). Escolha qual deseja usar, puxe lotes com segurança e exclua os arquivos que não quiser mais.
+                    Carregue seus arquivos (.txt). O sistema guarda tudo automaticamente, mesmo se você atualizar a página (F5).
                 </p>
 
                 <!-- Carregar Novo Arquivo .txt -->
@@ -199,7 +199,7 @@
         2B DataSync &copy; 2026 — Todos os direitos reservados.
     </footer>
 
-    <!-- Script Geral Integrado -->
+    <!-- Script Geral Integrado com Persistência (F5 Segura) -->
     <script>
         function mudarAba(aba) {
             const tabF = document.getElementById('tabFormatador');
@@ -334,10 +334,30 @@ USUÁRIOS: ${usuariosExtraidos}`.replace(/\n{2,}/g, '\n').trim();
             });
         }
 
-        // Script Gerenciador de Múltiplos Arquivos .txt
+        // Script Gerenciador com Armazenamento Local (Salva ao dar F5)
         let arquivosBases = {};
         let arquivoAtual = "";
         let loteUltimoExtraido = [];
+
+        // Ao carregar a página, busca dados salvos no navegador
+        window.onload = function() {
+            const dadosSalvos = localStorage.getItem('2b_datasync_bases');
+            if (dadosSalvos) {
+                try {
+                    arquivosBases = JSON.parse(dadosSalvos);
+                    const chaves = Object.keys(arquivosBases);
+                    if (chaves.length > 0) {
+                        atualizarSeletorArquivos(chaves[0]);
+                    }
+                } catch(e) {
+                    console.error("Erro ao carregar dados salvos:", e);
+                }
+            }
+        };
+
+        function salvarNoNavegador() {
+            localStorage.setItem('2b_datasync_bases', JSON.stringify(arquivosBases));
+        }
 
         function carregarArquivo(event) {
             const file = event.target.files[0];
@@ -355,8 +375,9 @@ USUÁRIOS: ${usuariosExtraidos}`.replace(/\n{2,}/g, '\n').trim();
                 }
 
                 arquivosBases[nomeOriginal] = linhas;
+                salvarNoNavegador();
                 atualizarSeletorArquivos(nomeOriginal);
-                alert(`Arquivo "${file.name}" carregado! (${linhas.length} fichas)`);
+                alert(`Arquivo "${file.name}" carregado e salvo com sucesso! (${linhas.length} fichas)`);
             };
             reader.readAsText(file);
             event.target.value = '';
@@ -372,6 +393,7 @@ USUÁRIOS: ${usuariosExtraidos}`.replace(/\n{2,}/g, '\n').trim();
                 }
             });
 
+            salvarNoNavegador();
             const chaves = Object.keys(arquivosBases);
 
             if (chaves.length === 0) {
@@ -411,6 +433,7 @@ USUÁRIOS: ${usuariosExtraidos}`.replace(/\n{2,}/g, '\n').trim();
             }
             if (confirm(`Deseja realmente remover o arquivo "${arquivoAtual}.txt" da lista?`)) {
                 delete arquivosBases[arquivoAtual];
+                salvarNoNavegador();
                 atualizarSeletorArquivos();
             }
         }
@@ -436,8 +459,9 @@ USUÁRIOS: ${usuariosExtraidos}`.replace(/\n{2,}/g, '\n').trim();
                 delete arquivosBases[arquivoAtual];
             }
             
-            atualizarSeletorArquivos();
-            alert(`Base atualizada com sucesso!`);
+            salvarNoNavegador();
+            atualizarSeletorArquivos(arquivoAtual);
+            alert(`Base atualizada e salva com sucesso!`);
         }
 
         function baixarArquivoAtivo() {
@@ -472,6 +496,7 @@ USUÁRIOS: ${usuariosExtraidos}`.replace(/\n{2,}/g, '\n').trim();
                 delete arquivosBases[arquivoAtual];
             }
 
+            salvarNoNavegador();
             atualizarSeletorArquivos();
 
             document.getElementById('painelResultado').classList.remove('hidden');
