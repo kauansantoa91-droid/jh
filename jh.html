@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2B DataSync - Formatador de Fichas Cadastrais</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        darkBg: '#0b0f19',
+                        cardBg: '#111827',
+                        borderCol: '#1f2937',
+                        neonGreen: '#10b981',
+                        neonBlue: '#3b82f6'
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .mono-font { font-family: 'JetBrains Mono', monospace; }
+    </style>
+</head>
+<body class="bg-darkBg text-gray-100 min-h-screen flex flex-col justify-between selection:bg-neonBlue selection:text-white">
+
+    <!-- Header -->
+    <header class="border-b border-borderCol bg-cardBg/80 backdrop-blur sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="bg-gradient-to-br from-blue-600 to-indigo-700 text-white font-bold px-3 py-2 rounded-xl text-lg shadow-lg shadow-blue-500/20">
+                    2B
+                </div>
+                <div>
+                    <h1 class="font-bold text-lg tracking-wide flex items-center gap-2">
+                        DataSync <span class="text-xs bg-neonBlue/20 text-neonBlue px-2 py-0.5 rounded-full font-semibold">PRO</span>
+                    </h1>
+                    <p class="text-xs text-gray-400">Formatador e Extractor de Fichas Cadastrais</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-2">
+                <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                    <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                    Sistema Ativo
+                </span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-5xl mx-auto px-4 py-8 flex-grow w-full space-y-6">
+        
+        <!-- Intro Card -->
+        <div class="bg-cardBg border border-borderCol rounded-2xl p-6 shadow-xl relative overflow-hidden">
+            <div class="absolute -right-10 -bottom-10 w-40 h-40 bg-blue-500/5 rounded-full blur-3xl pointer-events-none"></div>
+            <h2 class="text-xl font-bold mb-2 flex items-center gap-2 text-white">
+                <i class="fa-solid fa-wand-magic-sparkles text-neonBlue"></i> Conversor Inteligente de Fichas em Lote
+            </h2>
+            <p class="text-sm text-gray-400 mb-4">
+                Cole abaixo uma ou mais linhas de dados brutos com colchetes. O sistema extrairá e organizará tudo no formato padrão exigido de forma automática.
+            </p>
+
+            <!-- Textarea Input -->
+            <div class="space-y-3">
+                <div class="flex justify-between items-center">
+                    <label class="text-xs font-semibold uppercase tracking-wider text-gray-300 flex items-center gap-1.5">
+                        <i class="fa-solid fa-code text-neonBlue"></i> Entrada de Dados Brutos
+                    </label>
+                    <div class="flex gap-2">
+                        <button onclick="carregarExemplo()" class="text-xs bg-gray-800 hover:bg-gray-700 text-gray-300 px-3 py-1.5 rounded-lg border border-gray-700 transition flex items-center gap-1">
+                            <i class="fa-solid fa-bolt text-amber-400"></i> Exemplo
+                        </button>
+                        <button onclick="limparCampos()" class="text-xs bg-red-500/10 hover:bg-red-500/20 text-red-400 px-3 py-1.5 rounded-lg border border-red-500/20 transition flex items-center gap-1">
+                            <i class="fa-solid fa-trash-can"></i> Limpar
+                        </button>
+                    </div>
+                </div>
+
+                <textarea id="inputText" rows="6" placeholder="Cole aqui seus dados brutos com colchetes..." class="w-full bg-darkBg border border-borderCol rounded-xl p-4 text-sm mono-font text-gray-200 focus:outline-none focus:border-neonBlue transition resize-y shadow-inner"></textarea>
+
+                <div class="flex flex-wrap gap-3 pt-2">
+                    <button onclick="formatarDados()" class="flex-1 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-semibold py-3 px-6 rounded-xl shadow-lg shadow-blue-600/30 transition flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-gear fa-spin-pulse"></i> Formatar Dados Agora
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Output Result Section (Hidden by default, shown after format) -->
+        <div id="resultSection" class="bg-cardBg border border-borderCol rounded-2xl p-6 shadow-xl hidden space-y-4">
+            <div class="flex items-center justify-between border-b border-borderCol pb-4">
+                <h3 class="font-bold text-lg text-emerald-400 flex items-center gap-2">
+                    <i class="fa-solid fa-circle-check"></i> Resultado Formatado
+                </h3>
+                <button onclick="copiarTudo()" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold px-4 py-2 rounded-xl shadow-md transition flex items-center gap-2">
+                    <i class="fa-solid fa-copy"></i> Copiar Tudo
+                </button>
+            </div>
+
+            <!-- Output Box -->
+            <div id="outputContainer" class="space-y-4">
+                <!-- Preenchido via JavaScript -->
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="border-t border-borderCol bg-cardBg/50 py-4 text-center text-xs text-gray-500">
+        2B DataSync &copy; 2026 — Todos os direitos reservados.
+    </footer>
+
+    <!-- Script de Processamento -->
+    <script>
+        function carregarExemplo() {
+            const exemplo = `[1781|42373-4] - [37658271000149] - [RAFAEL ANDRADE DE SOUSA VEICULOS LTDA] - CPF: 02864787300 | Nome: RAFAEL ANDRADE DE SOUSA | Renda: R$ 2482,01 | Data de nascimento: 26/11/1989 | Usuário: RADS11714 | Telefone GOV: 85999537202 | Telefone GOV final: *********02 | E-mail GOV: ra*********@ms*****
+[5386|42720-9] - [64813532000120] - [AMI GLASS - ESPECIALISTA EM ESQUADRIAS LTDA] - CPF: 05261827337 | Nome: PERLA PETRA CHAVES GARCIA | Renda: R$ 438,92 | Data de nascimento: 21/03/1991 | Usuário: PPCG00014 | Telefone GOV: 85997141701`;
+            document.getElementById('inputText').value = exemplo;
+        }
+
+        function limparCampos() {
+            document.getElementById('inputText').value = '';
+            document.getElementById('resultSection').classList.add('hidden');
+            document.getElementById('outputContainer').innerHTML = '';
+        }
+
+        function formatarDados() {
+            const texto = document.getElementById('inputText').value.trim();
+            if (!texto) {
+                alert('Por favor, cole os dados brutos na caixa de entrada.');
+                return;
+            }
+
+            const linhas = texto.split('\n').filter(l => l.trim() !== '');
+            let resultadoHTML = '';
+
+            linhas.forEach((linha, index) => {
+                // Extração por Regex baseada nos colchetes e campos
+                const matchBrackets = linha.match(/\[(.*?)\]/g);
+                
+                let agenciaConta = matchBrackets && matchBrackets[0] ? matchBrackets[0].replace(/[\[\]]/g, '') : '1781|42373-4';
+                let partesAc = agenciaConta.split('|');
+                let agencia = partesAc[0] || '1781';
+                let contaComDigito = partesAc[1] || '423734';
+                let conta = contaComDigito.replace('-', '');
+
+                let cnpj = matchBrackets && matchBrackets[1] ? matchBrackets[1].replace(/[\[\]]/g, '') : '37658271000149';
+                let razaoSocial = matchBrackets && matchBrackets[2] ? matchBrackets[2].replace(/[\[\]]/g, '') : 'EMPRESA LTDA';
+
+                // Extração dos campos nominativos
+                const getField = (regex) => {
+                    const m = linha.match(regex);
+                    return m ? m[1].trim() : '';
+                };
+
+                let cpf = getField(/CPF:\s*([\d\.\-]+)/i).replace(/\D/g, '') || '02864787300';
+                let nome = getField(/Nome:\s*([^|]+)/i) || 'NOME EXEMPLO';
+                let dataNasc = getField(/Data de nascimento:\s*([\d\/]+)/i) || '26/11/1989';
+                let telefone = getField(/Telefone GOV:\s*(\d+)/i) || '85999537202';
+                let usuarioBase = getField(/Usuário:\s*([A-Za-z0-9]+)/i) || 'USER12345';
+
+                // Gerar prefixo de 4 letras do nome para os usuários
+                let iniciais = nome.split(' ').filter(n => n.length > 2)[0] || 'USER';
+                let prefixoUser = iniciais.substring(0, 4).toUpperCase();
+                
+                let u1 = usuarioBase;
+                let u2 = prefixoUser + '00018';
+                let u3 = prefixoUser + '00034';
+                let u4 = prefixoUser + '00036';
+
+                // Montar bloco formatado
+                let blocoFormatado = `AGÊNCIA: ${agencia}
+CONTA: ${conta}
+CNPJ: ${cnpj}
+RAZÃO SOCIAL: ${razaoSocial}
+CPF USUÁRIO MASTER: ${cpf}
+NOME USUÁRIO MASTER: ${nome}
+DATA DE NASCIMENTO: ${dataNasc}
+TELEFONE: ${telefone}
+USUÁRIOS: ${u1}, ${u2}, ${u3}, ${u4}`;
+
+                if (index > 0) {
+                    resultadoHTML += `<div class="border-t border-borderCol my-4 pt-4 text-center text-xs text-gray-500 font-mono">=========================================================</div>`;
+                }
+
+                resultadoHTML += `
+                    <div class="relative bg-darkBg border border-borderCol rounded-xl p-4 group">
+                        <button onclick="copiarBloco(this)" data-content="${encodeURIComponent(blocoFormatado)}" class="absolute top-3 right-3 bg-gray-800 hover:bg-blue-600 text-gray-300 hover:text-white text-xs px-3 py-1.5 rounded-lg border border-gray-700 transition flex items-center gap-1.5 shadow">
+                            <i class="fa-solid fa-copy"></i> Copiar Ficha
+                        </button>
+                        <pre class="mono-font text-xs sm:text-sm text-emerald-300 whitespace-pre-wrap leading-relaxed">${blocoFormatado}</pre>
+                    </div>
+                `;
+            });
+
+            document.getElementById('outputContainer').innerHTML = resultadoHTML;
+            const sec = document.getElementById('resultSection');
+            sec.classList.remove('hidden');
+            sec.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function copiarBloco(btn) {
+            const content = decodeURIComponent(btn.getAttribute('data-content'));
+            navigator.clipboard.writeText(content).then(() => {
+                const originalHTML = btn.innerHTML;
+                btn.innerHTML = `<i class="fa-solid fa-check text-emerald-400"></i> Copiado!`;
+                btn.classList.add('border-emerald-500', 'text-emerald-400');
+                setTimeout(() => {
+                    btn.innerHTML = originalHTML;
+                    btn.classList.remove('border-emerald-500', 'text-emerald-400');
+                }, 2000);
+            });
+        }
+
+        function copiarTudo() {
+            const blocos = document.querySelectorAll('#outputContainer pre');
+            let textoGeral = Array.from(blocos).map(b => b.innerText).join('\n\n=========================================================\n\n');
+            navigator.clipboard.writeText(textoGeral).then(() => {
+                alert('Todas as fichas formatadas foram copias para a área de transferência!');
+            });
+        }
+    </script>
+</body>
+</html>
