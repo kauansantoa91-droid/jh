@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>2B DataSync - Formatador de Fichas Cadastrais</title>
+    <title>2B DataSync - Sistema Completo</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -33,9 +33,9 @@
 </head>
 <body class="bg-darkBg text-gray-100 min-h-screen flex flex-col justify-between selection:bg-neonBlue selection:text-white">
 
-    <!-- Header -->
+    <!-- Header com Seletor de Abas -->
     <header class="border-b border-borderCol bg-cardBg/80 backdrop-blur sticky top-0 z-50">
-        <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
+        <div class="max-w-7xl mx-auto px-4 py-4 flex flex-col sm:flex-row items-center justify-between gap-4">
             <div class="flex items-center space-x-3">
                 <div class="bg-gradient-to-br from-blue-600 to-indigo-700 text-white font-bold px-3 py-2 rounded-xl text-lg shadow-lg shadow-blue-500/20">
                     2B
@@ -44,10 +44,21 @@
                     <h1 class="font-bold text-lg tracking-wide flex items-center gap-2">
                         DataSync <span class="text-xs bg-neonBlue/20 text-neonBlue px-2 py-0.5 rounded-full font-semibold">PRO</span>
                     </h1>
-                    <p class="text-xs text-gray-400">Formatador e Extractor de Fichas Cadastrais</p>
+                    <p class="text-xs text-gray-400">Plataforma Integrada de Gestão de Fichas</p>
                 </div>
             </div>
-            <div class="flex items-center gap-2">
+
+            <!-- Botões de Alternância de Abas -->
+            <div class="flex items-center bg-darkBg border border-borderCol p-1 rounded-xl gap-1">
+                <button onclick="mudarAba('formatador')" id="btnTabFormatador" class="px-4 py-2 text-xs font-semibold rounded-lg transition bg-blue-600 text-white shadow">
+                    <i class="fa-solid fa-wand-magic-sparkles mr-1.5"></i> Formatador PRO
+                </button>
+                <button onclick="mudarAba('gerenciador')" id="btnTabGerenciador" class="px-4 py-2 text-xs font-semibold rounded-lg transition text-gray-400 hover:text-white">
+                    <i class="fa-solid fa-boxes-stacked mr-1.5"></i> Gerenciador de Lotes
+                </button>
+            </div>
+
+            <div class="hidden sm:flex items-center gap-2">
                 <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
                     <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
                     Sistema Ativo
@@ -59,56 +70,125 @@
     <!-- Main Content -->
     <main class="max-w-5xl mx-auto px-4 py-8 flex-grow w-full space-y-6">
         
-        <!-- Intro Card -->
-        <div class="bg-cardBg border border-borderCol rounded-2xl p-6 shadow-xl relative overflow-hidden">
-            <div class="absolute -right-10 -bottom-10 w-40 h-40 bg-blue-500/5 rounded-full blur-3xl pointer-events-none"></div>
-            <h2 class="text-xl font-bold mb-2 flex items-center gap-2 text-white">
-                <i class="fa-solid fa-wand-magic-sparkles text-neonBlue"></i> Conversor Inteligente de Fichas em Lote
-            </h2>
-            <p class="text-sm text-gray-400 mb-4">
-                Cole abaixo suas fichas. O sistema extrairá os dados garantindo que o campo de Renda e Usuários apareçam em todas.
-            </p>
+        <!-- ================= ABA 1: FORMATADOR PRO ================= -->
+        <div id="tabFormatador" class="space-y-6">
+            <div class="bg-cardBg border border-borderCol rounded-2xl p-6 shadow-xl relative overflow-hidden">
+                <div class="absolute -right-10 -bottom-10 w-40 h-40 bg-blue-500/5 rounded-full blur-3xl pointer-events-none"></div>
+                <h2 class="text-xl font-bold mb-2 flex items-center gap-2 text-white">
+                    <i class="fa-solid fa-wand-magic-sparkles text-neonBlue"></i> Conversor Inteligente de Fichas em Lote
+                </h2>
+                <p class="text-sm text-gray-400 mb-4">
+                    Cole abaixo suas fichas. O sistema extrairá os dados garantindo que o campo de Renda e Usuários apareçam em todas.
+                </p>
 
-            <!-- Textarea Input -->
-            <div class="space-y-3">
-                <div class="flex justify-between items-center">
-                    <label class="text-xs font-semibold uppercase tracking-wider text-gray-300 flex items-center gap-1.5">
-                        <i class="fa-solid fa-code text-neonBlue"></i> Entrada de Dados Brutos
-                    </label>
-                    <div class="flex gap-2">
-                        <button onclick="carregarExemplo()" class="text-xs bg-gray-800 hover:bg-gray-700 text-gray-300 px-3 py-1.5 rounded-lg border border-gray-700 transition flex items-center gap-1">
-                            <i class="fa-solid fa-bolt text-amber-400"></i> Exemplo
-                        </button>
-                        <button onclick="limparCampos()" class="text-xs bg-red-500/10 hover:bg-red-500/20 text-red-400 px-3 py-1.5 rounded-lg border border-red-500/20 transition flex items-center gap-1">
-                            <i class="fa-solid fa-trash-can"></i> Limpar
+                <div class="space-y-3">
+                    <div class="flex justify-between items-center">
+                        <label class="text-xs font-semibold uppercase tracking-wider text-gray-300 flex items-center gap-1.5">
+                            <i class="fa-solid fa-code text-neonBlue"></i> Entrada de Dados Brutos
+                        </label>
+                        <div class="flex gap-2">
+                            <button onclick="carregarExemplo()" class="text-xs bg-gray-800 hover:bg-gray-700 text-gray-300 px-3 py-1.5 rounded-lg border border-gray-700 transition flex items-center gap-1">
+                                <i class="fa-solid fa-bolt text-amber-400"></i> Exemplo
+                            </button>
+                            <button onclick="limparCampos()" class="text-xs bg-red-500/10 hover:bg-red-500/20 text-red-400 px-3 py-1.5 rounded-lg border border-red-500/20 transition flex items-center gap-1">
+                                <i class="fa-solid fa-trash-can"></i> Limpar
+                            </button>
+                        </div>
+                    </div>
+
+                    <textarea id="inputText" rows="6" placeholder="Cole aqui seus dados brutos com colchetes..." class="w-full bg-darkBg border border-borderCol rounded-xl p-4 text-sm mono-font text-gray-200 focus:outline-none focus:border-neonBlue transition resize-y shadow-inner"></textarea>
+
+                    <div class="flex flex-wrap gap-3 pt-2">
+                        <button onclick="formatarDados()" class="flex-1 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-semibold py-3 px-6 rounded-xl shadow-lg shadow-blue-600/30 transition flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-gear fa-spin-pulse"></i> Formatar Dados Agora
                         </button>
                     </div>
                 </div>
+            </div>
 
-                <textarea id="inputText" rows="6" placeholder="Cole aqui seus dados brutos com colchetes..." class="w-full bg-darkBg border border-borderCol rounded-xl p-4 text-sm mono-font text-gray-200 focus:outline-none focus:border-neonBlue transition resize-y shadow-inner"></textarea>
-
-                <div class="flex flex-wrap gap-3 pt-2">
-                    <button onclick="formatarDados()" class="flex-1 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-semibold py-3 px-6 rounded-xl shadow-lg shadow-blue-600/30 transition flex items-center justify-center gap-2">
-                        <i class="fa-solid fa-gear fa-spin-pulse"></i> Formatar Dados Agora
+            <!-- Output Result Section Formatador -->
+            <div id="resultSection" class="bg-cardBg border border-borderCol rounded-2xl p-6 shadow-xl hidden space-y-4">
+                <div class="flex items-center justify-between border-b border-borderCol pb-4">
+                    <h3 class="font-bold text-lg text-emerald-400 flex items-center gap-2">
+                        <i class="fa-solid fa-circle-check"></i> Resultado Formatado
+                    </h3>
+                    <button onclick="copiarTudo()" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold px-4 py-2 rounded-xl shadow-md transition flex items-center gap-2">
+                        <i class="fa-solid fa-copy"></i> Copiar Tudo
                     </button>
                 </div>
+                <div id="outputContainer" class="space-y-4"></div>
             </div>
         </div>
 
-        <!-- Output Result Section -->
-        <div id="resultSection" class="bg-cardBg border border-borderCol rounded-2xl p-6 shadow-xl hidden space-y-4">
-            <div class="flex items-center justify-between border-b border-borderCol pb-4">
-                <h3 class="font-bold text-lg text-emerald-400 flex items-center gap-2">
-                    <i class="fa-solid fa-circle-check"></i> Resultado Formatado
-                </h3>
-                <button onclick="copiarTudo()" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold px-4 py-2 rounded-xl shadow-md transition flex items-center gap-2">
-                    <i class="fa-solid fa-copy"></i> Copiar Tudo
-                </button>
-            </div>
+        <!-- ================= ABA 2: GERENCIADOR DE LOTES ================= -->
+        <div id="tabGerenciador" class="space-y-6 hidden">
+            <div class="bg-cardBg border border-borderCol rounded-2xl p-6 shadow-xl space-y-5">
+                <h2 class="text-xl font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-boxes-stacked text-neonBlue"></i> Gerenciador por Múltiplos Arquivos .txt
+                </h2>
+                <p class="text-sm text-gray-400">
+                    Carregue seus arquivos (.txt). Escolha qual deseja usar, puxe lotes com segurança e exclua os arquivos que não quiser mais.
+                </p>
 
-            <!-- Output Box -->
-            <div id="outputContainer" class="space-y-4">
-                <!-- Preenchido via JavaScript -->
+                <!-- Carregar Novo Arquivo .txt -->
+                <div class="border-2 border-dashed border-borderCol hover:border-neonBlue p-6 text-center rounded-xl bg-darkBg cursor-pointer transition" onclick="document.getElementById('fileInput').click()">
+                    <p class="text-sm text-sky-400 m-0"><i class="fa-solid fa-cloud-arrow-up mr-2"></i> Clique para carregar ou adicionar arquivo <b>.txt</b> (Ex: 2b.txt, 5b.txt, 62.txt)</p>
+                    <input type="file" id="fileInput" accept=".txt" style="display:none" onchange="carregarArquivo(event)">
+                </div>
+
+                <!-- Selecionar Arquivo Ativo e Botão de Excluir Direto -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <div class="flex justify-between items-center mb-2">
+                            <label class="text-xs font-semibold uppercase tracking-wider text-gray-300">Escolher arquivo ativo:</label>
+                            <button onclick="excluirArquivoAtual()" class="text-xs text-red-400 hover:text-red-300 transition flex items-center gap-1 font-semibold">
+                                <i class="fa-solid fa-trash-can"></i> Excluir este arquivo
+                            </button>
+                        </div>
+                        <select id="selectArquivoAtivo" onchange="mudarArquivoAtivo()" class="w-full bg-darkBg border border-borderCol rounded-xl p-3 text-sm mono-font text-emerald-400 focus:outline-none focus:border-neonBlue">
+                            <option value="">Nenhum arquivo carregado</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="text-xs font-semibold uppercase tracking-wider text-gray-300 block mb-2">Quantidade para puxar:</label>
+                        <input type="number" id="quantidadePuxar" value="30" min="1" class="w-full bg-darkBg border border-borderCol rounded-xl p-3 text-sm mono-font text-emerald-400 focus:outline-none focus:border-neonBlue">
+                    </div>
+                </div>
+
+                <!-- Estatísticas -->
+                <div id="statsInfo" class="bg-darkBg border border-borderCol p-4 rounded-xl text-sm text-sky-400 mono-font">
+                    📊 Selecione um arquivo acima para ver as fichas.
+                </div>
+
+                <!-- Acordeão para Ver/Editar Fichas -->
+                <details class="bg-darkBg border border-borderCol p-4 rounded-xl">
+                    <summary class="cursor-pointer text-sky-400 font-semibold text-sm">🔍 Ver, Editar Fichas ou Baixar este Arquivo Ativo</summary>
+                    <div class="mt-3 space-y-3">
+                        <label class="text-xs text-gray-400 block">Fichas do arquivo selecionado:</label>
+                        <textarea id="textoBaseMaster" rows="6" class="w-full bg-cardBg border border-borderCol rounded-xl p-3 text-xs mono-font text-gray-200 focus:outline-none focus:border-neonBlue"></textarea>
+                        <div class="flex flex-wrap gap-2">
+                            <button onclick="atualizarBaseManual()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold py-2.5 px-4 rounded-xl text-xs transition">💾 Salvar Alterações</button>
+                            <button onclick="baixarArquivoAtivo()" class="bg-sky-600 hover:bg-sky-500 text-white font-semibold py-2.5 px-4 rounded-xl text-xs transition">📥 Baixar Este Arquivo Atualizado (.txt)</button>
+                        </div>
+                    </div>
+                </details>
+
+                <!-- Nome do Lote Gerado -->
+                <div>
+                    <label class="text-xs font-semibold uppercase tracking-wider text-gray-300 block mb-2">Nome desejado para o arquivo do lote gerado (.txt):</label>
+                    <input type="text" id="nomeArquivoLote" value="lote_fichas" class="w-full bg-darkBg border border-borderCol rounded-xl p-3 text-sm mono-font text-gray-200 focus:outline-none focus:border-neonBlue">
+                </div>
+
+                <button onclick="puxarLote()" class="w-full bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-darkBg font-bold py-3.5 px-6 rounded-xl shadow-lg shadow-emerald-500/20 transition flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-rocket"></i> Puxar Lote e Baixar Arquivo
+                </button>
+
+                <!-- Painel de Resultado do Lote -->
+                <div id="painelResultado" class="hidden space-y-3 pt-4 border-t border-borderCol">
+                    <label class="text-xs font-semibold uppercase tracking-wider text-emerald-400 block">Lote Extraído (Baixado automaticamente):</label>
+                    <div id="loteOutput" class="bg-darkBg border border-borderCol p-4 rounded-xl text-xs mono-font text-emerald-300 max-h-48 overflow-y-auto whitespace-pre-wrap"></div>
+                    <button onclick="baixarLoteAtual()" class="bg-sky-600 hover:bg-sky-500 text-white font-semibold py-2 px-4 rounded-xl text-xs transition">📥 Baixar Novamente este Lote (.txt)</button>
+                </div>
             </div>
         </div>
 
@@ -119,8 +199,27 @@
         2B DataSync &copy; 2026 — Todos os direitos reservados.
     </footer>
 
-    <!-- Script de Processamento -->
+    <!-- Script Geral Integrado -->
     <script>
+        function mudarAba(aba) {
+            const tabF = document.getElementById('tabFormatador');
+            const tabG = document.getElementById('tabGerenciador');
+            const btnF = document.getElementById('btnTabFormatador');
+            const btnG = document.getElementById('btnTabGerenciador');
+
+            if (aba === 'formatador') {
+                tabF.classList.remove('hidden');
+                tabG.classList.add('hidden');
+                btnF.className = "px-4 py-2 text-xs font-semibold rounded-lg transition bg-blue-600 text-white shadow";
+                btnG.className = "px-4 py-2 text-xs font-semibold rounded-lg transition text-gray-400 hover:text-white";
+            } else {
+                tabF.classList.add('hidden');
+                tabG.classList.remove('hidden');
+                btnG.className = "px-4 py-2 text-xs font-semibold rounded-lg transition bg-blue-600 text-white shadow";
+                btnF.className = "px-4 py-2 text-xs font-semibold rounded-lg transition text-gray-400 hover:text-white";
+            }
+        }
+
         function carregarExemplo() {
             const exemplo = `[0154|479306] - [43461614000183] - [OSNIR FERREIRA DA SILVA] - CPF: 00897545303 | Nome: OSNIR FERREIRA DA SILVA | Data de nascimento: 01/06/1985 | Renda: R$ 613,34 | Telefone: 11939021863 | Usuários: OFDS00721, OFDS00884`;
             document.getElementById('inputText').value = exemplo;
@@ -141,12 +240,10 @@
 
             texto = texto.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
             let linhas = texto.split('\n').map(l => l.trim()).filter(l => l !== '');
-
             let resultadoHTML = '';
 
             linhas.forEach((linha, index) => {
                 const matchBrackets = linha.match(/\[(.*?)\]/g);
-                
                 let agenciaConta = matchBrackets && matchBrackets[0] ? matchBrackets[0].replace(/[\[\]]/g, '') : '1781|42373-4';
                 let partesAc = agenciaConta.split('|');
                 let agencia = partesAc[0] || '1781';
@@ -163,14 +260,10 @@
 
                 let cpf = getField(/CPF:\s*([\d\.\-]+)/i).replace(/\D/g, '') || '07178698900';
                 let nome = getField(/Nome:\s*([^|]+)/i) || 'LAUDINEA FERREIRA';
-                
-                // Extrai a renda apenas se ela existir no texto bruto
                 let renda = getField(/Renda:\s*([^|]+)/i);
-                
                 let dataNasc = getField(/Data de nascimento:\s*([\d\/]+)/i) || '05/10/1988';
                 let telefone = getField(/(?:Telefone(?: GOV)?):\s*([\d\*]+)/i) || '41997622460';
                 
-                // Pega os usuários (seja no formato plural ou singular, ou gera automático)
                 let usuariosExtraidos = '';
                 const matchPlural = linha.match(/Usu[aá]rios:\s*([^\n\|]+)/i);
                 const matchSingular = linha.match(/Usu[aá]rio:\s*([^\s\|]+)/i);
@@ -190,7 +283,6 @@
                     usuariosExtraidos = iniciais.toUpperCase() + '11714';
                 }
 
-                // Monta o bloco condicionalmente (inclui a linha de renda apenas se houver valor)
                 let blocoFormatado = `AGÊNCIA: ${agencia}
 CONTA: ${conta}
 CNPJ: ${cnpj}
@@ -240,6 +332,168 @@ USUÁRIOS: ${usuariosExtraidos}`.replace(/\n{2,}/g, '\n').trim();
             navigator.clipboard.writeText(textoGeral).then(() => {
                 alert('Todas as fichas formatadas foram copias para a área de transferência!');
             });
+        }
+
+        // Script Gerenciador de Múltiplos Arquivos .txt
+        let arquivosBases = {};
+        let arquivoAtual = "";
+        let loteUltimoExtraido = [];
+
+        function carregarArquivo(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const nomeOriginal = file.name.replace(/\.[^/.]+$/, "");
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const conteudo = e.target.result;
+                const linhas = conteudo.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+                
+                if (linhas.length === 0) {
+                    alert('Este arquivo está vazio!');
+                    return;
+                }
+
+                arquivosBases[nomeOriginal] = linhas;
+                atualizarSeletorArquivos(nomeOriginal);
+                alert(`Arquivo "${file.name}" carregado! (${linhas.length} fichas)`);
+            };
+            reader.readAsText(file);
+            event.target.value = '';
+        }
+
+        function atualizarSeletorArquivos(selecionarNome = "") {
+            const select = document.getElementById('selectArquivoAtivo');
+            select.innerHTML = '';
+            
+            Object.keys(arquivosBases).forEach(nome => {
+                if (arquivosBases[nome].length === 0) {
+                    delete arquivosBases[nome];
+                }
+            });
+
+            const chaves = Object.keys(arquivosBases);
+
+            if (chaves.length === 0) {
+                select.innerHTML = '<option value="">Nenhum arquivo carregado</option>';
+                arquivoAtual = "";
+                sincronizarInterface();
+                return;
+            }
+
+            chaves.forEach(nome => {
+                const opt = document.createElement('option');
+                opt.value = nome;
+                opt.textContent = `${nome}.txt (${arquivosBases[nome].length} fichas)`;
+                select.appendChild(opt);
+            });
+
+            if (selecionarNome && arquivosBases[selecionarNome]) {
+                select.value = selecionarNome;
+            } else if (chaves.length > 0) {
+                select.value = chaves[0];
+            }
+
+            arquivoAtual = select.value;
+            sincronizarInterface();
+        }
+
+        function mudarArquivoAtivo() {
+            const select = document.getElementById('selectArquivoAtivo');
+            arquivoAtual = select.value;
+            sincronizarInterface();
+        }
+
+        function excluirArquivoAtual() {
+            if (!arquivoAtual || !arquivosBases[arquivoAtual]) {
+                alert('Nenhum arquivo selecionado para excluir.');
+                return;
+            }
+            if (confirm(`Deseja realmente remover o arquivo "${arquivoAtual}.txt" da lista?`)) {
+                delete arquivosBases[arquivoAtual];
+                atualizarSeletorArquivos();
+            }
+        }
+
+        function sincronizarInterface() {
+            if (!arquivoAtual || !arquivosBases[arquivoAtual]) {
+                document.getElementById('statsInfo').innerText = "📊 Nenhum arquivo selecionado ou lista vazia.";
+                document.getElementById('textoBaseMaster').value = "";
+                return;
+            }
+            const linhas = arquivosBases[arquivoAtual];
+            document.getElementById('statsInfo').innerText = `📊 Arquivo ativo: [ ${arquivoAtual}.txt ] | Total de fichas restantes: ${linhas.length}`;
+            document.getElementById('textoBaseMaster').value = linhas.join('\n');
+            document.getElementById('nomeArquivoLote').value = `${arquivoAtual}_lote`;
+        }
+
+        function atualizarBaseManual() {
+            if (!arquivoAtual) return;
+            const texto = document.getElementById('textoBaseMaster').value;
+            arquivosBases[arquivoAtual] = texto.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+            
+            if (arquivosBases[arquivoAtual].length === 0) {
+                delete arquivosBases[arquivoAtual];
+            }
+            
+            atualizarSeletorArquivos();
+            alert(`Base atualizada com sucesso!`);
+        }
+
+        function baixarArquivoAtivo() {
+            if (!arquivoAtual || !arquivosBases[arquivoAtual]) return;
+            const conteudo = arquivosBases[arquivoAtual].join('\n');
+            const blob = new Blob([conteudo], { type: 'text/plain;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${arquivoAtual}_atualizado.txt`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function puxarLote() {
+            if (!arquivoAtual || !arquivosBases[arquivoAtual]) {
+                alert('Selecione ou carregue um arquivo .txt primeiro.');
+                return;
+            }
+
+            let listaAtiva = arquivosBases[arquivoAtual];
+            const qtd = parseInt(document.getElementById('quantidadePuxar').value) || 30;
+
+            if (listaAtiva.length < qtd) {
+                alert(`❌ Erro: Você pediu ${qtd} fichas, mas o arquivo "${arquivoAtual}.txt" tem apenas ${listaAtiva.length} fichas restantes!`);
+                return;
+            }
+
+            loteUltimoExtraido = listaAtiva.splice(0, qtd);
+            
+            if (listaAtiva.length === 0) {
+                delete arquivosBases[arquivoAtual];
+            }
+
+            atualizarSeletorArquivos();
+
+            document.getElementById('painelResultado').classList.remove('hidden');
+            document.getElementById('loteOutput').innerText = loteUltimoExtraido.join('\n');
+
+            baixarLoteAtual();
+        }
+
+        function baixarLoteAtual() {
+            if (loteUltimoExtraido.length === 0) return;
+            let nomeBase = document.getElementById('nomeArquivoLote').value.trim();
+            if (!nomeBase) nomeBase = "lote_fichas";
+            if (!nomeBase.endsWith('.txt')) nomeBase += '.txt';
+
+            const conteudo = loteUltimoExtraido.join('\n');
+            const blob = new Blob([conteudo], { type: 'text/plain;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = nomeBase;
+            a.click();
+            URL.revokeObjectURL(url);
         }
     </script>
 </body>
