@@ -66,7 +66,7 @@
                 <i class="fa-solid fa-wand-magic-sparkles text-neonBlue"></i> Conversor Inteligente de Fichas em Lote
             </h2>
             <p class="text-sm text-gray-400 mb-4">
-                Cole abaixo suas fichas. O sistema extrairá os dados, incluindo a renda e o usuário correspondente.
+                Cole abaixo suas fichas (compatível com múltiplos formatos de usuários e renda).
             </p>
 
             <!-- Textarea Input -->
@@ -122,7 +122,7 @@
     <!-- Script de Processamento -->
     <script>
         function carregarExemplo() {
-            const exemplo = `[1781|42373-4] - [37658271000149] - [RAFAEL ANDRADE DE SOUSA VEICULOS LTDA] - CPF: 02864787300 | Nome: RAFAEL ANDRADE DE SOUSA | Renda: R$ 2482,01 | Data de nascimento: 26/11/1989 | Usuário: RADS11714 | Telefone GOV: 85999537202 | Telefone GOV final: ****02 | E-mail GOV: ra***@ms**`;
+            const exemplo = `[0154|335169] - [15697211000100] - [LAUDINEA FERREIRA] - CPF: 07178698900 | Nome: LAUDINEA FERREIRA | Data de nascimento: 05/10/1988 | Telefone: 41997622460 | Usuários: LFE00213, LFE00908, LFE01157, LFE01319, LFE01321`;
             document.getElementById('inputText').value = exemplo;
         }
 
@@ -163,29 +163,39 @@
 
                 let cpf = getField(/CPF:\s*([\d\.\-]+)/i).replace(/\D/g, '') || '02864787300';
                 let nome = getField(/Nome:\s*([^|]+)/i) || 'NOME EXEMPLO';
-                let renda = getField(/Renda:\s*([^|]+)/i) || 'R$ 0,00';
+                let renda = getField(/Renda:\s*([^|]+)/i);
                 let dataNasc = getField(/Data de nascimento:\s*([\d\/]+)/i) || '26/11/1989';
-                let telefone = getField(/Telefone GOV:\s*(\d+)/i) || '85999537202';
+                let telefone = getField(/(?:Telefone(?: GOV)?):\s*([\d\*]+)/i) || '85999537202';
                 
-                // Pega exatamente o usuário da ficha
-                let usuarioExtraido = '';
-                const matchUser = linha.match(/Usu[aá]rio:\s*([^\s\|]+)/i);
-                if (matchUser && matchUser[1]) {
-                    usuarioExtraido = matchUser[1].trim();
+                // Pega os usuários de ambos os formatos (seja "Usuários: A, B, C" ou "Usuário: X")
+                let usuariosExtraidos = '';
+                
+                const matchPlural = linha.match(/Usu[aá]rios:\s*([^\n\|]+)/i);
+                const matchSingular = linha.match(/Usu[aá]rio:\s*([^\s\|]+)/i);
+
+                if (matchPlural && matchPlural[1]) {
+                    usuariosExtraidos = matchPlural[1].trim();
+                } else if (matchSingular && matchSingular[1] && matchSingular[1].toLowerCase() !== 'null') {
+                    usuariosExtraidos = matchSingular[1].trim();
                 } else {
-                    usuarioExtraido = 'N/D';
+                    usuariosExtraidos = 'N/D';
                 }
 
+                // Monta o bloco condicionalmente (se tiver renda, exibe; se não tiver, pula o campo renda)
                 let blocoFormatado = `AGÊNCIA: ${agencia}
 CONTA: ${conta}
 CNPJ: ${cnpj}
 RAZÃO SOCIAL: ${razaoSocial}
 CPF USUÁRIO MASTER: ${cpf}
-NOME USUÁRIO MASTER: ${nome}
-RENDA: ${renda}
-DATA DE NASCIMENTO: ${dataNasc}
+NOME USUÁRIO MASTER: ${nome}`;
+
+                if (renda) {
+                    blocoFormatado += `\nRENDA: ${renda}`;
+                }
+
+                blocoFormatado += `\nDATA DE NASCIMENTO: ${dataNasc}
 TELEFONE: ${telefone}
-USUÁRIOS: ${usuarioExtraido}`;
+USUÁRIOS: ${usuariosExtraidos}`;
 
                 if (index > 0) {
                     resultadoHTML += `<div class="border-t border-borderCol my-4 pt-4 text-center text-xs text-gray-500 font-mono">=========================================================</div>`;
