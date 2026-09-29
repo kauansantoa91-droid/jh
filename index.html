@@ -66,7 +66,7 @@
                 <i class="fa-solid fa-wand-magic-sparkles text-neonBlue"></i> Conversor Inteligente de Fichas em Lote
             </h2>
             <p class="text-sm text-gray-400 mb-4">
-                Cole abaixo suas fichas. O sistema extrairá rigorosamente o usuário exato da linha e gerará as variações.
+                Cole abaixo suas fichas. O sistema extrairá os dados e trará exatamente o usuário da ficha.
             </p>
 
             <!-- Textarea Input -->
@@ -139,7 +139,6 @@
                 return;
             }
 
-            // Normaliza quebras de linha e limpa espaços extras para evitar falhas em lote
             texto = texto.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
             let linhas = texto.split('\n').map(l => l.trim()).filter(l => l !== '');
 
@@ -167,27 +166,14 @@
                 let dataNasc = getField(/Data de nascimento:\s*([\d\/]+)/i) || '26/11/1989';
                 let telefone = getField(/Telefone GOV:\s*(\d+)/i) || '85999537202';
                 
-                // Extração altamente precisa do usuário da linha (ignora maiúsculas/minúsculas e acentos)
+                // Pega exatamente o usuário da ficha
                 let usuarioExtraido = '';
                 const matchUser = linha.match(/Usu[aá]rio:\s*([^\s\|]+)/i);
-                if (matchUser && matchUser[1] && matchUser[1].toLowerCase() !== 'null') {
+                if (matchUser && matchUser[1]) {
                     usuarioExtraido = matchUser[1].trim();
+                } else {
+                    usuarioExtraido = 'N/D';
                 }
-
-                // Se não encontrar ou vier nulo/vazio, gera pelas iniciais do nome
-                if (!usuarioExtraido) {
-                    let palavrasNome = nome.split(' ').filter(p => p.length > 2 && !['DOS', 'DAS', 'E', 'DE', 'DO'].includes(p));
-                    let iniciais = palavrasNome.length >= 3 ? palavrasNome[0][0] + palavrasNome[1][0] + palavrasNome[2][0] + (palavrasNome[3] ? palavrasNome[3][0] : 'X') : 'USER';
-                    usuarioExtraido = iniciais.toUpperCase() + '11714';
-                }
-
-                // Gera o prefixo com base nas 4 primeiras letras do usuário extraído
-                let prefixoUser = usuarioExtraido.substring(0, 4).toUpperCase();
-
-                let u1 = usuarioExtraido;
-                let u2 = prefixoUser + '00018';
-                let u3 = prefixoUser + '00034';
-                let u4 = prefixoUser + '00036';
 
                 let blocoFormatado = `AGÊNCIA: ${agencia}
 CONTA: ${conta}
@@ -197,7 +183,7 @@ CPF USUÁRIO MASTER: ${cpf}
 NOME USUÁRIO MASTER: ${nome}
 DATA DE NASCIMENTO: ${dataNasc}
 TELEFONE: ${telefone}
-USUÁRIOS: ${u1}, ${u2}, ${u3}, ${u4}`;
+USUÁRIOS: ${usuarioExtraido}`;
 
                 if (index > 0) {
                     resultadoHTML += `<div class="border-t border-borderCol my-4 pt-4 text-center text-xs text-gray-500 font-mono">=========================================================</div>`;
