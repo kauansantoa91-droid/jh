@@ -66,7 +66,7 @@
                 <i class="fa-solid fa-wand-magic-sparkles text-neonBlue"></i> Conversor Inteligente de Fichas em Lote
             </h2>
             <p class="text-sm text-gray-400 mb-4">
-                Cole abaixo uma ou mais linhas de dados brutos com colchetes. O sistema extrairá e organizará tudo no formato padrão exigido de forma automática.
+                Cole abaixo a sua ficha cadastral. O sistema extrairá os dados e montará o formato exato com o usuário da ficha e suas variações.
             </p>
 
             <!-- Textarea Input -->
@@ -95,7 +95,7 @@
             </div>
         </div>
 
-        <!-- Output Result Section (Hidden by default, shown after format) -->
+        <!-- Output Result Section -->
         <div id="resultSection" class="bg-cardBg border border-borderCol rounded-2xl p-6 shadow-xl hidden space-y-4">
             <div class="flex items-center justify-between border-b border-borderCol pb-4">
                 <h3 class="font-bold text-lg text-emerald-400 flex items-center gap-2">
@@ -122,8 +122,7 @@
     <!-- Script de Processamento -->
     <script>
         function carregarExemplo() {
-            const exemplo = `[1781|42373-4] - [37658271000149] - [RAFAEL ANDRADE DE SOUSA VEICULOS LTDA] - CPF: 02864787300 | Nome: RAFAEL ANDRADE DE SOUSA | Renda: R$ 2482,01 | Data de nascimento: 26/11/1989 | Usuário: RADS11714 | Telefone GOV: 85999537202 | Telefone GOV final: *********02 | E-mail GOV: ra*********@ms*****
-[5386|42720-9] - [64813532000120] - [AMI GLASS - ESPECIALISTA EM ESQUADRIAS LTDA] - CPF: 05261827337 | Nome: PERLA PETRA CHAVES GARCIA | Renda: R$ 438,92 | Data de nascimento: 21/03/1991 | Usuário: PPCG00014 | Telefone GOV: 85997141701`;
+            const exemplo = `[1781|42373-4] - [37658271000149] - [RAFAEL ANDRADE DE SOUSA VEICULOS LTDA] - CPF: 02864787300 | Nome: RAFAEL ANDRADE DE SOUSA | Renda: R$ 2482,01 | Data de nascimento: 26/11/1989 | Usuário: RADS11714 | Telefone GOV: 85999537202 | Telefone GOV final: *********02 | E-mail GOV: ra*********@ms*****`;
             document.getElementById('inputText').value = exemplo;
         }
 
@@ -144,7 +143,6 @@
             let resultadoHTML = '';
 
             linhas.forEach((linha, index) => {
-                // Extração por Regex baseada nos colchetes e campos
                 const matchBrackets = linha.match(/\[(.*?)\]/g);
                 
                 let agenciaConta = matchBrackets && matchBrackets[0] ? matchBrackets[0].replace(/[\[\]]/g, '') : '1781|42373-4';
@@ -156,7 +154,6 @@
                 let cnpj = matchBrackets && matchBrackets[1] ? matchBrackets[1].replace(/[\[\]]/g, '') : '37658271000149';
                 let razaoSocial = matchBrackets && matchBrackets[2] ? matchBrackets[2].replace(/[\[\]]/g, '') : 'EMPRESA LTDA';
 
-                // Extração dos campos nominativos
                 const getField = (regex) => {
                     const m = linha.match(regex);
                     return m ? m[1].trim() : '';
@@ -166,18 +163,18 @@
                 let nome = getField(/Nome:\s*([^|]+)/i) || 'NOME EXEMPLO';
                 let dataNasc = getField(/Data de nascimento:\s*([\d\/]+)/i) || '26/11/1989';
                 let telefone = getField(/Telefone GOV:\s*(\d+)/i) || '85999537202';
-                let usuarioBase = getField(/Usuário:\s*([A-Za-z0-9]+)/i) || 'USER12345';
-
-                // Gerar prefixo de 4 letras do nome para os usuários
-                let iniciais = nome.split(' ').filter(n => n.length > 2)[0] || 'USER';
-                let prefixoUser = iniciais.substring(0, 4).toUpperCase();
                 
-                let u1 = usuarioBase;
+                // Extrai exatamente o usuário que veio na linha (Ex: RADS11714)
+                let usuarioExtraido = getField(/Usuário:\s*([A-Za-z0-9]+)/i) || 'RADS11714';
+                
+                // Pega as 4 primeiras letras do usuário extraído para montar as variações subsequentes
+                let prefixoUser = usuarioExtraido.substring(0, 4).toUpperCase();
+
+                let u1 = usuarioExtraido;
                 let u2 = prefixoUser + '00018';
                 let u3 = prefixoUser + '00034';
                 let u4 = prefixoUser + '00036';
 
-                // Montar bloco formatado
                 let blocoFormatado = `AGÊNCIA: ${agencia}
 CONTA: ${conta}
 CNPJ: ${cnpj}
