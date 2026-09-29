@@ -66,7 +66,7 @@
                 <i class="fa-solid fa-wand-magic-sparkles text-neonBlue"></i> Conversor Inteligente de Fichas em Lote
             </h2>
             <p class="text-sm text-gray-400 mb-4">
-                Cole abaixo a sua ficha cadastral real. O sistema extrairá os dados e montará os usuários perfeitamente.
+                Cole abaixo suas fichas. O sistema extrairá rigorosamente o usuário exato da linha e gerará as variações.
             </p>
 
             <!-- Textarea Input -->
@@ -122,7 +122,7 @@
     <!-- Script de Processamento -->
     <script>
         function carregarExemplo() {
-            const exemplo = `[1781|42373-4] - [37658271000149] - [RAFAEL ANDRADE DE SOUSA VEICULOS LTDA] - CPF: 02864787300 | Nome: RAFAEL ANDRADE DE SOUSA | Renda: R$ 2482,01 | Data de nascimento: 26/11/1989 | Usuário: RADS11714 | Telefone GOV: 85999537202 | Telefone GOV final: *********02 | E-mail GOV: ra*********@ms*****`;
+            const exemplo = `[1781|42373-4] - [37658271000149] - [RAFAEL ANDRADE DE SOUSA VEICULOS LTDA] - CPF: 02864787300 | Nome: RAFAEL ANDRADE DE SOUSA | Renda: R$ 2482,01 | Data de nascimento: 26/11/1989 | Usuário: RADS11714 | Telefone GOV: 85999537202 | Telefone GOV final: ****02 | E-mail GOV: ra***@ms**`;
             document.getElementById('inputText').value = exemplo;
         }
 
@@ -133,13 +133,16 @@
         }
 
         function formatarDados() {
-            const texto = document.getElementById('inputText').value.trim();
+            let texto = document.getElementById('inputText').value.trim();
             if (!texto) {
                 alert('Por favor, cole os dados brutos na caixa de entrada.');
                 return;
             }
 
-            const linhas = texto.split('\n').filter(l => l.trim() !== '');
+            // Normaliza quebras de linha e limpa espaços extras para evitar falhas em lote
+            texto = texto.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+            let linhas = texto.split('\n').map(l => l.trim()).filter(l => l !== '');
+
             let resultadoHTML = '';
 
             linhas.forEach((linha, index) => {
@@ -164,30 +167,21 @@
                 let dataNasc = getField(/Data de nascimento:\s*([\d\/]+)/i) || '26/11/1989';
                 let telefone = getField(/Telefone GOV:\s*(\d+)/i) || '85999537202';
                 
-                // Tenta capturar o usuário da linha
+                // Extração altamente precisa do usuário da linha (ignora maiúsculas/minúsculas e acentos)
                 let usuarioExtraido = '';
-                const matchUser = linha.match(/Usuário:\s*([^\s\|]+)/i);
-                if (matchUser) {
+                const matchUser = linha.match(/Usu[aá]rio:\s*([^\s\|]+)/i);
+                if (matchUser && matchUser[1] && matchUser[1].toLowerCase() !== 'null') {
                     usuarioExtraido = matchUser[1].trim();
                 }
 
-                // Se não vier usuário ou vier 'null' / vazio, gera automaticamente pelas iniciais do nome
-                if (!usuarioExtraido || usuarioExtraido.toLowerCase() === 'null') {
+                // Se não encontrar ou vier nulo/vazio, gera pelas iniciais do nome
+                if (!usuarioExtraido) {
                     let palavrasNome = nome.split(' ').filter(p => p.length > 2 && !['DOS', 'DAS', 'E', 'DE', 'DO'].includes(p));
-                    let iniciais = '';
-                    if (palavrasNome.length >= 4) {
-                        iniciais = palavrasNome[0][0] + palavrasNome[1][0] + palavrasNome[2][0] + palavrasNome[3][0];
-                    } else if (palavrasNome.length === 3) {
-                        iniciais = palavrasNome[0][0] + palavrasNome[1][0] + palavrasNome[2][0] + palavrasNome[2][1];
-                    } else if (palavrasNome.length === 2) {
-                        iniciais = palavrasNome[0].substring(0, 2) + palavrasNome[1].substring(0, 2);
-                    } else {
-                        iniciais = nome.replace(/\s+/g, '').substring(0, 4);
-                    }
+                    let iniciais = palavrasNome.length >= 3 ? palavrasNome[0][0] + palavrasNome[1][0] + palavrasNome[2][0] + (palavrasNome[3] ? palavrasNome[3][0] : 'X') : 'USER';
                     usuarioExtraido = iniciais.toUpperCase() + '11714';
                 }
 
-                // Pega o prefixo do usuário para gerar os secundários
+                // Gera o prefixo com base nas 4 primeiras letras do usuário extraído
                 let prefixoUser = usuarioExtraido.substring(0, 4).toUpperCase();
 
                 let u1 = usuarioExtraido;
