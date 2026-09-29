@@ -66,7 +66,7 @@
                 <i class="fa-solid fa-wand-magic-sparkles text-neonBlue"></i> Conversor Inteligente de Fichas em Lote
             </h2>
             <p class="text-sm text-gray-400 mb-4">
-                Cole abaixo suas fichas. O sistema lê os usuários existentes ou gera automaticamente caso estejam ausentes.
+                Cole abaixo suas fichas. O sistema extrairá os dados garantindo que o campo de Renda e Usuários apareçam em todas.
             </p>
 
             <!-- Textarea Input -->
@@ -163,11 +163,14 @@
 
                 let cpf = getField(/CPF:\s*([\d\.\-]+)/i).replace(/\D/g, '') || '07178698900';
                 let nome = getField(/Nome:\s*([^|]+)/i) || 'LAUDINEA FERREIRA';
-                let renda = getField(/Renda:\s*([^|]+)/i);
+                
+                // Pega a renda se existir, senão define um valor padrão
+                let renda = getField(/Renda:\s*([^|]+)/i) || 'R$ 2.500,00';
+                
                 let dataNasc = getField(/Data de nascimento:\s*([\d\/]+)/i) || '05/10/1988';
                 let telefone = getField(/(?:Telefone(?: GOV)?):\s*([\d\*]+)/i) || '41997622460';
                 
-                // Tenta puxar os usuários caso venham escritos na ficha
+                // Pega os usuários (seja no formato plural ou singular, ou gera automático)
                 let usuariosExtraidos = '';
                 const matchPlural = linha.match(/Usu[aá]rios:\s*([^\n\|]+)/i);
                 const matchSingular = linha.match(/Usu[aá]rio:\s*([^\s\|]+)/i);
@@ -177,7 +180,6 @@
                 } else if (matchSingular && matchSingular[1] && matchSingular[1].toLowerCase() !== 'null') {
                     usuariosExtraidos = matchSingular[1].trim();
                 } else {
-                    // Se não tiver escrito na ficha, gera automaticamente pelas iniciais do nome + 11714
                     let palavrasNome = nome.split(' ').filter(p => p.length > 2 && !['DOS', 'DAS', 'E', 'DE', 'DO'].includes(p));
                     let iniciais = '';
                     if (palavrasNome.length >= 2) {
@@ -193,13 +195,9 @@ CONTA: ${conta}
 CNPJ: ${cnpj}
 RAZÃO SOCIAL: ${razaoSocial}
 CPF USUÁRIO MASTER: ${cpf}
-NOME USUÁRIO MASTER: ${nome}`;
-
-                if (renda) {
-                    blocoFormatado += `\nRENDA: ${renda}`;
-                }
-
-                blocoFormatado += `\nDATA DE NASCIMENTO: ${dataNasc}
+NOME USUÁRIO MASTER: ${nome}
+RENDA: ${renda}
+DATA DE NASCIMENTO: ${dataNasc}
 TELEFONE: ${telefone}
 USUÁRIOS: ${usuariosExtraidos}`;
 
