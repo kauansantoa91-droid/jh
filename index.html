@@ -66,7 +66,7 @@
                 <i class="fa-solid fa-wand-magic-sparkles text-neonBlue"></i> Conversor Inteligente de Fichas em Lote
             </h2>
             <p class="text-sm text-gray-400 mb-4">
-                Cole abaixo a sua ficha cadastral. O sistema extrairá os dados e montará o formato exato com o usuário da ficha e suas variações.
+                Cole abaixo a sua ficha cadastral. O sistema extrairá o usuário exato da linha e montará o formato solicitado.
             </p>
 
             <!-- Textarea Input -->
@@ -164,8 +164,14 @@
                 let dataNasc = getField(/Data de nascimento:\s*([\d\/]+)/i) || '26/11/1989';
                 let telefone = getField(/Telefone GOV:\s*(\d+)/i) || '85999537202';
                 
-                // Extrai exatamente o usuário que veio na linha (Ex: RADS11714)
-                let usuarioExtraido = getField(/Usuário:\s*([A-Za-z0-9]+)/i) || 'RADS11714';
+                // Extração robusta do usuário (Procura por Usuário: seguido de qualquer bloco de texto sem espaços ou tubos)
+                let usuarioExtraido = '';
+                const matchUser = linha.match(/Usuário:\s*([^\s\|]+)/i);
+                if (matchUser) {
+                    usuarioExtraido = matchUser[1].trim();
+                } else {
+                    usuarioExtraido = 'RADS11714';
+                }
                 
                 // Pega as 4 primeiras letras do usuário extraído para montar as variações subsequentes
                 let prefixoUser = usuarioExtraido.substring(0, 4).toUpperCase();
