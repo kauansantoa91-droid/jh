@@ -127,7 +127,7 @@
                     <i class="fa-solid fa-boxes-stacked text-neonBlue"></i> Gerenciador por Múltiplos Arquivos .txt
                 </h2>
                 <p class="text-sm text-gray-400">
-                    Carregue seus arquivos (.txt). O sistema guarda tudo automaticamente, mesmo se você atualizar a página (F5).
+                    Carregue seus arquivos (.txt). O sistema mantém selecionado o arquivo atual em que você está trabalhando.
                 </p>
 
                 <!-- Carregar Novo Arquivo .txt -->
@@ -136,7 +136,7 @@
                     <input type="file" id="fileInput" accept=".txt" style="display:none" onchange="carregarArquivo(event)">
                 </div>
 
-                <!-- Selecionar Arquivo Ativo e Botão de Excluir Direto -->
+                <!-- Controles: Arquivo Ativo, Quantidade e Escolha de Formato -->
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                         <div class="flex justify-between items-center mb-2">
@@ -153,6 +153,15 @@
                         <label class="text-xs font-semibold uppercase tracking-wider text-gray-300 block mb-2">Quantidade para puxar:</label>
                         <input type="number" id="quantidadePuxar" value="30" min="1" class="w-full bg-darkBg border border-borderCol rounded-xl p-3 text-sm mono-font text-emerald-400 focus:outline-none focus:border-neonBlue">
                     </div>
+                </div>
+
+                <!-- Escolher Formato de Saída -->
+                <div>
+                    <label class="text-xs font-semibold uppercase tracking-wider text-gray-300 block mb-2">Formato de Saída do Lote:</label>
+                    <select id="formatoSaida" class="w-full bg-darkBg border border-borderCol rounded-xl p-3 text-sm mono-font text-sky-400 focus:outline-none focus:border-neonBlue">
+                        <option value="linha">Formato Linha Única (Com colchetes / Padrão)</option>
+                        <option value="bloco">Formato Blocos (Linha por linha separada)</option>
+                    </select>
                 </div>
 
                 <!-- Estatísticas -->
@@ -199,7 +208,7 @@
         2B DataSync &copy; 2026 — Todos os direitos reservados.
     </footer>
 
-    <!-- Script Geral Integrado com Persistência (F5 Segura) -->
+    <!-- Script Geral com Fix de Seleção de Arquivo Ativo -->
     <script>
         function mudarAba(aba) {
             const tabF = document.getElementById('tabFormatador');
@@ -334,12 +343,10 @@ USUÁRIOS: ${usuariosExtraidos}`.replace(/\n{2,}/g, '\n').trim();
             });
         }
 
-        // Script Gerenciador com Armazenamento Local (Salva ao dar F5)
         let arquivosBases = {};
         let arquivoAtual = "";
         let loteUltimoExtraido = [];
 
-        // Ao carregar a página, busca dados salvos no navegador
         window.onload = function() {
             const dadosSalvos = localStorage.getItem('2b_datasync_bases');
             if (dadosSalvos) {
@@ -353,10 +360,24 @@ USUÁRIOS: ${usuariosExtraidos}`.replace(/\n{2,}/g, '\n').trim();
                     console.error("Erro ao carregar dados salvos:", e);
                 }
             }
+
+            const loteSalvo = localStorage.getItem('2b_datasync_ultimo_lote');
+            if (loteSalvo) {
+                try {
+                    loteUltimoExtraido = JSON.parse(loteSalvo);
+                    if (loteUltimoExtraido.length > 0) {
+                        document.getElementById('painelResultado').classList.remove('hidden');
+                        document.getElementById('loteOutput').innerText = loteUltimoExtraido.join('\n');
+                    }
+                } catch(e) {
+                    console.error("Erro ao carregar último lote:", e);
+                }
+            }
         };
 
         function salvarNoNavegador() {
             localStorage.setItem('2b_datasync_bases', JSON.stringify(arquivosBases));
+            localStorage.setItem('2b_datasync_ultimo_lote', JSON.stringify(loteUltimoExtraido));
         }
 
         function carregarArquivo(event) {
@@ -377,7 +398,7 @@ USUÁRIOS: ${usuariosExtraidos}`.replace(/\n{2,}/g, '\n').trim();
                 arquivosBases[nomeOriginal] = linhas;
                 salvarNoNavegador();
                 atualizarSeletorArquivos(nomeOriginal);
-                alert(`Arquivo "${file.name}" carregado e salvo com sucesso! (${linhas.length} fichas)`);
+                alert(`Arquivo "${file.name}" carregado e salvo! (${linhas.length} fichas)`);
             };
             reader.readAsText(file);
             event.target.value = '';
@@ -385,6 +406,10 @@ USUÁRIOS: ${usuariosExtraidos}`.replace(/\n{2,}/g, '\n').trim();
 
         function atualizarSeletorArquivos(selecionarNome = "") {
             const select = document.getElementById('selectArquivoAtivo');
+            
+            // Pega o arquivo que estava selecionado antes para não perder a seleção
+            const arquivoSelecionadoAnteriormente = selecionarNome || arquivoAtual || select.value;
+
             select.innerHTML = '';
             
             Object.keys(arquivosBases).forEach(nome => {
@@ -410,9 +435,10 @@ USUÁRIOS: ${usuariosExtraidos}`.replace(/\n{2,}/g, '\n').trim();
                 select.appendChild(opt);
             });
 
-            if (selecionarNome && arquivosBases[selecionarNome]) {
-                select.value = selecionarNome;
-            } else if (chaves.length > 0) {
+            // Restaura o arquivo que estava ativo ou pega o primeiro se não existir
+            if (arquivoSelecionadoAnteriormente && arquivosBases[arquivoSelecionadoAnteriormente]) {
+                select.value = arquivoSelecionadoAnteriormente;
+            } else {
                 select.value = chaves[0];
             }
 
@@ -461,7 +487,7 @@ USUÁRIOS: ${usuariosExtraidos}`.replace(/\n{2,}/g, '\n').trim();
             
             salvarNoNavegador();
             atualizarSeletorArquivos(arquivoAtual);
-            alert(`Base atualizada e salva com sucesso!`);
+            alert(`Base atualizada com sucesso!`);
         }
 
         function baixarArquivoAtivo() {
@@ -474,6 +500,67 @@ USUÁRIOS: ${usuariosExtraidos}`.replace(/\n{2,}/g, '\n').trim();
             a.download = `${arquivoAtual}_atualizado.txt`;
             a.click();
             URL.revokeObjectURL(url);
+        }
+
+        function converterParaBlocos(linhas) {
+            let resultadoBlocos = '';
+            linhas.forEach((linha, index) => {
+                const matchBrackets = linha.match(/\[(.*?)\]/g);
+                let agenciaConta = matchBrackets && matchBrackets[0] ? matchBrackets[0].replace(/[\[\]]/g, '') : '1781|42373-4';
+                let partesAc = agenciaConta.split('|');
+                let agencia = partesAc[0] || '1781';
+                let contaComDigito = partesAc[1] || '423734';
+                let conta = contaComDigito.replace('-', '');
+
+                let cnpj = matchBrackets && matchBrackets[1] ? matchBrackets[1].replace(/[\[\]]/g, '') : '37658271000149';
+                let razaoSocial = matchBrackets && matchBrackets[2] ? matchBrackets[2].replace(/[\[\]]/g, '') : 'EMPRESA LTDA';
+
+                const getField = (regex) => {
+                    const m = linha.match(regex);
+                    return m ? m[1].trim() : '';
+                };
+
+                let cpf = getField(/CPF:\s*([\d\.\-]+)/i).replace(/\D/g, '') || '07178698900';
+                let nome = getField(/Nome:\s*([^|]+)/i) || 'LAUDINEA FERREIRA';
+                let renda = getField(/Renda:\s*([^|]+)/i);
+                let dataNasc = getField(/Data de nascimento:\s*([\d\/]+)/i) || '05/10/1988';
+                let telefone = getField(/(?:Telefone(?: GOV)?):\s*([\d\*]+)/i) || '41997622460';
+                
+                let usuariosExtraidos = '';
+                const matchPlural = linha.match(/Usu[aá]rios:\s*([^\n\|]+)/i);
+                const matchSingular = linha.match(/Usu[aá]rio:\s*([^\s\|]+)/i);
+
+                if (matchPlural && matchPlural[1]) {
+                    usuariosExtraidos = matchPlural[1].trim();
+                } else if (matchSingular && matchSingular[1] && matchSingular[1].toLowerCase() !== 'null') {
+                    usuariosExtraidos = matchSingular[1].trim();
+                } else {
+                    let palavrasNome = nome.split(' ').filter(p => p.length > 2 && !['DOS', 'DAS', 'E', 'DE', 'DO'].includes(p));
+                    let iniciais = '';
+                    if (palavrasNome.length >= 2) {
+                        iniciais = palavrasNome[0].substring(0, 2) + palavrasNome[1].substring(0, 2);
+                    } else {
+                        iniciais = nome.replace(/\s+/g, '').substring(0, 4);
+                    }
+                    usuariosExtraidos = iniciais.toUpperCase() + '11714';
+                }
+
+                let blocoFormatado = `AGÊNCIA: ${agencia}
+CONTA: ${conta}
+CNPJ: ${cnpj}
+RAZÃO SOCIAL: ${razaoSocial}
+CPF USUÁRIO MASTER: ${cpf}
+NOME USUÁRIO MASTER: ${nome}
+${renda ? `RENDA: ${renda}\n` : ''}DATA DE NASCIMENTO: ${dataNasc}
+TELEFONE: ${telefone}
+USUÁRIOS: ${usuariosExtraidos}`.replace(/\n{2,}/g, '\n').trim();
+
+                if (index > 0) {
+                    resultadoBlocos += '\n\n=========================================================\n\n';
+                }
+                resultadoBlocos += blocoFormatado;
+            });
+            return resultadoBlocos;
         }
 
         function puxarLote() {
@@ -490,14 +577,21 @@ USUÁRIOS: ${usuariosExtraidos}`.replace(/\n{2,}/g, '\n').trim();
                 return;
             }
 
-            loteUltimoExtraido = listaAtiva.splice(0, qtd);
+            let fichasPuxadasBrutas = listaAtiva.splice(0, qtd);
             
             if (listaAtiva.length === 0) {
                 delete arquivosBases[arquivoAtual];
             }
 
+            const formato = document.getElementById('formatoSaida').value;
+            if (formato === 'bloco') {
+                loteUltimoExtraido = [converterParaBlocos(fichasPuxadasBrutas)];
+            } else {
+                loteUltimoExtraido = fichasPuxadasBrutas;
+            }
+
             salvarNoNavegador();
-            atualizarSeletorArquivos();
+            atualizarSeletorArquivos(arquivoAtual); // Mantém o arquivo atual selecionado
 
             document.getElementById('painelResultado').classList.remove('hidden');
             document.getElementById('loteOutput').innerText = loteUltimoExtraido.join('\n');
