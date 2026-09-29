@@ -66,7 +66,7 @@
                 <i class="fa-solid fa-wand-magic-sparkles text-neonBlue"></i> Conversor Inteligente de Fichas em Lote
             </h2>
             <p class="text-sm text-gray-400 mb-4">
-                Cole abaixo a sua ficha cadastral. O sistema extrairá o usuário exato da linha e montará o formato solicitado.
+                Cole abaixo a sua ficha cadastral real. O sistema extrairá os dados e gerará os usuários com base nas iniciais do nome.
             </p>
 
             <!-- Textarea Input -->
@@ -122,12 +122,12 @@
     <!-- Script de Processamento -->
     <script>
         function carregarExemplo() {
-            const exemplo = `[1781|42373-4] - [37658271000149] - [RAFAEL ANDRADE DE SOUSA VEICULOS LTDA] - CPF: 02864787300 | Nome: RAFAEL ANDRADE DE SOUSA | Renda: R$ 2482,01 | Data de nascimento: 26/11/1989 | Usuário: RADS11714 | Telefone GOV: 85999537202 | Telefone GOV final: *********02 | E-mail GOV: ra*********@ms*****`;
+            const exemplo = `[1781|42373-4] - [37658271000149] - [RAFAEL ANDRADE DE SOUSA VEICULOS LTDA] - CPF: 02864787300 | Nome: RAFAEL ANDRADE DE SOUSA | Renda: R$ 2482,01 | Data de nascimento: 26/11/1989 | Telefone GOV: 85999537202 | Telefone GOV final: *********02 | E-mail GOV: ra*********@ms*****`;
             document.getElementById('inputText').value = exemplo;
         }
 
         function limparCampos() {
-            document.getElementById('inputText').value = '';
+            document.getElementById('inputText'].value = '';
             document.getElementById('resultSection').classList.add('hidden');
             document.getElementById('outputContainer').innerHTML = '';
         }
@@ -160,23 +160,24 @@
                 };
 
                 let cpf = getField(/CPF:\s*([\d\.\-]+)/i).replace(/\D/g, '') || '02864787300';
-                let nome = getField(/Nome:\s*([^|]+)/i) || 'NOME EXEMPLO';
+                let nome = getField(/Nome:\s*([^|]+)/i) || 'RAFAEL ANDRADE DE SOUSA';
                 let dataNasc = getField(/Data de nascimento:\s*([\d\/]+)/i) || '26/11/1989';
                 let telefone = getField(/Telefone GOV:\s*(\d+)/i) || '85999537202';
                 
-                // Extração robusta do usuário (Procura por Usuário: seguido de qualquer bloco de texto sem espaços ou tubos)
-                let usuarioExtraido = '';
-                const matchUser = linha.match(/Usuário:\s*([^\s\|]+)/i);
-                if (matchUser) {
-                    usuarioExtraido = matchUser[1].trim();
+                // Gera as iniciais baseadas no nome da pessoa (Ex: RAFAEL ANDRADE DE SOUSA -> RADS)
+                let palavrasNome = nome.split(' ').filter(p => p.length > 2 && !['DOS', 'DAS', 'E'].includes(p));
+                let iniciais = '';
+                if (palavrasNome.length >= 4) {
+                    iniciais = palavrasNome[0][0] + palavrasNome[1][0] + palavrasNome[2][0] + palavrasNome[3][0];
+                } else if (palavrasNome.length === 3) {
+                    iniciais = palavrasNome[0][0] + palavrasNome[1][0] + palavrasNome[2][0] + palavrasNome[2][1];
                 } else {
-                    usuarioExtraido = 'RADS11714';
+                    iniciais = nome.replace(/\s+/g, '').substring(0, 4);
                 }
-                
-                // Pega as 4 primeiras letras do usuário extraído para montar as variações subsequentes
-                let prefixoUser = usuarioExtraido.substring(0, 4).toUpperCase();
+                let prefixoUser = iniciais.toUpperCase();
 
-                let u1 = usuarioExtraido;
+                // Gera a lista de usuários com base nas iniciais automáticas + numeração padrão
+                let u1 = prefixoUser + '00006';
                 let u2 = prefixoUser + '00018';
                 let u3 = prefixoUser + '00034';
                 let u4 = prefixoUser + '00036';
