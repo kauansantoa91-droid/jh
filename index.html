@@ -122,7 +122,7 @@
     <!-- Script de Processamento -->
     <script>
         function carregarExemplo() {
-            const exemplo = `[0154|335169] - [15697211000100] - [LAUDINEA FERREIRA] - CPF: 07178698900 | Nome: LAUDINEA FERREIRA | Data de nascimento: 05/10/1988 | Telefone: 41997622460`;
+            const exemplo = `[0154|479306] - [43461614000183] - [OSNIR FERREIRA DA SILVA] - CPF: 00897545303 | Nome: OSNIR FERREIRA DA SILVA | Data de nascimento: 01/06/1985 | Renda: R$ 613,34 | Telefone: 11939021863 | Usuários: OFDS00721, OFDS00884`;
             document.getElementById('inputText').value = exemplo;
         }
 
@@ -164,8 +164,8 @@
                 let cpf = getField(/CPF:\s*([\d\.\-]+)/i).replace(/\D/g, '') || '07178698900';
                 let nome = getField(/Nome:\s*([^|]+)/i) || 'LAUDINEA FERREIRA';
                 
-                // Pega a renda se existir, senão define um valor padrão
-                let renda = getField(/Renda:\s*([^|]+)/i) || 'R$ 2.500,00';
+                // Extrai a renda apenas se ela existir no texto bruto
+                let renda = getField(/Renda:\s*([^|]+)/i);
                 
                 let dataNasc = getField(/Data de nascimento:\s*([\d\/]+)/i) || '05/10/1988';
                 let telefone = getField(/(?:Telefone(?: GOV)?):\s*([\d\*]+)/i) || '41997622460';
@@ -190,16 +190,16 @@
                     usuariosExtraidos = iniciais.toUpperCase() + '11714';
                 }
 
+                // Monta o bloco condicionalmente (inclui a linha de renda apenas se houver valor)
                 let blocoFormatado = `AGÊNCIA: ${agencia}
 CONTA: ${conta}
 CNPJ: ${cnpj}
 RAZÃO SOCIAL: ${razaoSocial}
 CPF USUÁRIO MASTER: ${cpf}
 NOME USUÁRIO MASTER: ${nome}
-RENDA: ${renda}
-DATA DE NASCIMENTO: ${dataNasc}
+${renda ? `RENDA: ${renda}\n` : ''}DATA DE NASCIMENTO: ${dataNasc}
 TELEFONE: ${telefone}
-USUÁRIOS: ${usuariosExtraidos}`;
+USUÁRIOS: ${usuariosExtraidos}`.replace(/\n{2,}/g, '\n').trim();
 
                 if (index > 0) {
                     resultadoHTML += `<div class="border-t border-borderCol my-4 pt-4 text-center text-xs text-gray-500 font-mono">=========================================================</div>`;
