@@ -78,7 +78,7 @@
                     <i class="fa-solid fa-wand-magic-sparkles text-neonBlue"></i> Conversor Inteligente de Fichas em Lote
                 </h2>
                 <p class="text-sm text-gray-400 mb-4">
-                    Cole abaixo suas fichas. O sistema extrairá os dados garantindo que o campo de Renda e Usuários apareçam em todas.
+                    Cole abaixo suas fichas. O sistema detecta se o telefone é API ou GOV e rotula corretamente na saída.
                 </p>
 
                 <div class="space-y-3">
@@ -208,7 +208,7 @@
         2B DataSync &copy; 2026 — Todos os direitos reservados.
     </footer>
 
-    <!-- Script Geral com Fix de Seleção de Arquivo Ativo -->
+    <!-- Script Geral -->
     <script>
         function mudarAba(aba) {
             const tabF = document.getElementById('tabFormatador');
@@ -229,8 +229,46 @@
             }
         }
 
+        // Função que retorna tanto o rótulo quanto o número correto
+        function extrairInfoTelefone(linha) {
+            // 1. Se tem Telefone API explícito com número válido
+            const matchApi = linha.match(/Telefone\s+API:\s*([\d\(\)\s\-+]+)/i);
+            if (matchApi && matchApi[1]) {
+                const limpo = matchApi[1].replace(/\D/g, '');
+                if (limpo.length >= 8) {
+                    return { label: 'TELEFONE API', numero: limpo };
+                }
+            }
+
+            // 2. Se tem Telefone GOV sem asteriscos
+            const matchGov = linha.match(/Telefone\s+GOV:\s*([^\s\|]+)/i);
+            if (matchGov && matchGov[1] && !matchGov[1].includes('*')) {
+                const limpo = matchGov[1].replace(/\D/g, '');
+                if (limpo.length >= 8) {
+                    return { label: 'TELEFONE', numero: limpo };
+                }
+            }
+
+            // 3. Campo genérico Telefone: (sem asteriscos)
+            const matchPadrao = linha.match(/(?:^|\|)\s*Telefone:\s*([^\s\|]+)/i);
+            if (matchPadrao && matchPadrao[1] && !matchPadrao[1].includes('*')) {
+                const limpo = matchPadrao[1].replace(/\D/g, '');
+                if (limpo.length >= 8) {
+                    return { label: 'TELEFONE', numero: limpo };
+                }
+            }
+
+            // 4. Se tiver apenas Telefone GOV final (mascarado)
+            const matchQualquerGov = linha.match(/Telefone\s+GOV(?:\s+final)?:\s*([^\s\|]+)/i);
+            if (matchQualquerGov && matchQualquerGov[1]) {
+                return { label: 'TELEFONE GOV FINAL', numero: matchQualquerGov[1].trim() };
+            }
+
+            return { label: 'TELEFONE', numero: '41997622460' };
+        }
+
         function carregarExemplo() {
-            const exemplo = `[0154|479306] - [43461614000183] - [OSNIR FERREIRA DA SILVA] - CPF: 00897545303 | Nome: OSNIR FERREIRA DA SILVA | Data de nascimento: 01/06/1985 | Renda: R$ 613,34 | Telefone: 11939021863 | Usuários: OFDS00721, OFDS00884`;
+            const exemplo = `[0895|136140-6] - [05737545000107] - [ENERCOL - ENERGETICA OESTE LTDA] - CPF: 31042740968 | Nome: DIETHER WERNINGHAUS | Renda: R$ 4228,71 | Data de nascimento: 11/09/1956 | Usuário: DWE00076 | Telefone GOV final: *********68 | E-mail GOV: dj****@wp******** | Telefone API: 47999793780`;
             document.getElementById('inputText').value = exemplo;
         }
 
@@ -271,7 +309,9 @@
                 let nome = getField(/Nome:\s*([^|]+)/i) || 'LAUDINEA FERREIRA';
                 let renda = getField(/Renda:\s*([^|]+)/i);
                 let dataNasc = getField(/Data de nascimento:\s*([\d\/]+)/i) || '05/10/1988';
-                let telefone = getField(/(?:Telefone(?: GOV)?):\s*([\d\*]+)/i) || '41997622460';
+                
+                // Extração inteligente de Rótulo e Telefone
+                let infoTel = extrairInfoTelefone(linha);
                 
                 let usuariosExtraidos = '';
                 const matchPlural = linha.match(/Usu[aá]rios:\s*([^\n\|]+)/i);
@@ -299,7 +339,7 @@ RAZÃO SOCIAL: ${razaoSocial}
 CPF USUÁRIO MASTER: ${cpf}
 NOME USUÁRIO MASTER: ${nome}
 ${renda ? `RENDA: ${renda}\n` : ''}DATA DE NASCIMENTO: ${dataNasc}
-TELEFONE: ${telefone}
+${infoTel.label}: ${infoTel.numero}
 USUÁRIOS: ${usuariosExtraidos}`.replace(/\n{2,}/g, '\n').trim();
 
                 if (index > 0) {
@@ -406,8 +446,6 @@ USUÁRIOS: ${usuariosExtraidos}`.replace(/\n{2,}/g, '\n').trim();
 
         function atualizarSeletorArquivos(selecionarNome = "") {
             const select = document.getElementById('selectArquivoAtivo');
-            
-            // Pega o arquivo que estava selecionado antes para não perder a seleção
             const arquivoSelecionadoAnteriormente = selecionarNome || arquivoAtual || select.value;
 
             select.innerHTML = '';
@@ -435,7 +473,6 @@ USUÁRIOS: ${usuariosExtraidos}`.replace(/\n{2,}/g, '\n').trim();
                 select.appendChild(opt);
             });
 
-            // Restaura o arquivo que estava ativo ou pega o primeiro se não existir
             if (arquivoSelecionadoAnteriormente && arquivosBases[arquivoSelecionadoAnteriormente]) {
                 select.value = arquivoSelecionadoAnteriormente;
             } else {
@@ -524,7 +561,9 @@ USUÁRIOS: ${usuariosExtraidos}`.replace(/\n{2,}/g, '\n').trim();
                 let nome = getField(/Nome:\s*([^|]+)/i) || 'LAUDINEA FERREIRA';
                 let renda = getField(/Renda:\s*([^|]+)/i);
                 let dataNasc = getField(/Data de nascimento:\s*([\d\/]+)/i) || '05/10/1988';
-                let telefone = getField(/(?:Telefone(?: GOV)?):\s*([\d\*]+)/i) || '41997622460';
+                
+                // Extração inteligente de Rótulo e Telefone
+                let infoTel = extrairInfoTelefone(linha);
                 
                 let usuariosExtraidos = '';
                 const matchPlural = linha.match(/Usu[aá]rios:\s*([^\n\|]+)/i);
@@ -552,7 +591,7 @@ RAZÃO SOCIAL: ${razaoSocial}
 CPF USUÁRIO MASTER: ${cpf}
 NOME USUÁRIO MASTER: ${nome}
 ${renda ? `RENDA: ${renda}\n` : ''}DATA DE NASCIMENTO: ${dataNasc}
-TELEFONE: ${telefone}
+${infoTel.label}: ${infoTel.numero}
 USUÁRIOS: ${usuariosExtraidos}`.replace(/\n{2,}/g, '\n').trim();
 
                 if (index > 0) {
@@ -591,7 +630,7 @@ USUÁRIOS: ${usuariosExtraidos}`.replace(/\n{2,}/g, '\n').trim();
             }
 
             salvarNoNavegador();
-            atualizarSeletorArquivos(arquivoAtual); // Mantém o arquivo atual selecionado
+            atualizarSeletorArquivos(arquivoAtual);
 
             document.getElementById('painelResultado').classList.remove('hidden');
             document.getElementById('loteOutput').innerText = loteUltimoExtraido.join('\n');
