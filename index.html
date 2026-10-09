@@ -78,7 +78,7 @@
                     <i class="fa-solid fa-wand-magic-sparkles text-neonBlue"></i> Conversor Inteligente de Fichas em Lote
                 </h2>
                 <p class="text-sm text-gray-400 mb-4">
-                    Cole abaixo suas fichas. O sistema detecta automaticamente se a ficha é do modelo antigo ou novo e aplica a formatação correta.
+                    Cole abaixo suas fichas. O sistema detecta automaticamente o modelo da ficha e aplica a formatação correta.
                 </p>
 
                 <div class="space-y-3">
@@ -96,7 +96,7 @@
                         </div>
                     </div>
 
-                    <textarea id="inputText" rows="6" placeholder="Cole aqui seus dados brutos com colchetes..." class="w-full bg-darkBg border border-borderCol rounded-xl p-4 text-sm mono-font text-gray-200 focus:outline-none focus:border-neonBlue transition resize-y shadow-inner"></textarea>
+                    <textarea id="inputText" rows="8" placeholder="Cole aqui seus dados brutos..." class="w-full bg-darkBg border border-borderCol rounded-xl p-4 text-sm mono-font text-gray-200 focus:outline-none focus:border-neonBlue transition resize-y shadow-inner"></textarea>
 
                     <div class="flex flex-wrap gap-3 pt-2">
                         <button onclick="formatarDados()" class="flex-1 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-semibold py-3 px-6 rounded-xl shadow-lg shadow-blue-600/30 transition flex items-center justify-center gap-2">
@@ -229,32 +229,68 @@
             }
         }
 
-        // Função inteligente para formatar fichas antigas e novas
+        // Função para formatar qualquer modelo de linha ou bloco de ficha
         function formatarLinhaFicha(linha) {
-            // 1. Extrai Agência e Conta do primeiro par de colchetes
+            // 1. DETECÇÃO E PROCESSAMENTO PARA FICHA "CNPJ CORRENTISTA CAIXA PJ"
+            if (linha.includes('CNPJ CORRENTISTA CAIXA PJ') || linha.includes('TELEFONES DENTRO DA CAIXA') || linha.includes('SITUACAO CADASTRAL:')) {
+                const getCampoCaixa = (regex) => {
+                    const m = linha.match(regex);
+                    return m ? m[1].trim() : '';
+                };
+
+                const cnpjBruto = getCampoCaixa(/CNPJ:\s*([\d\.\/-]+)/i);
+                const cnpj = cnpjBruto ? cnpjBruto.replace(/\D/g, '').replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, "$1.$2.$3/$4-$5") : 'N/D';
+
+                const razaoSocial = getCampoCaixa(/RAZAO SOCIAL:\s*([^\n\r]+)/i) || 'N/D';
+                const agencia = getCampoCaixa(/AGENCIA:\s*([^\n\r]+)/i) || 'N/D';
+                const conta = getCampoCaixa(/CONTA:\s*([^\n\r]+)/i) || 'N/D';
+                
+                const cpfSocioMatch = linha.match(/SOCIO.*?\n?\s*CPF:\s*([\d\.-]+)\s*\|\s*([^\n\r]+)/i);
+                const cpfBruto = cpfSocioMatch ? cpfSocioMatch[1].replace(/\D/g, '') : getCampoCaixa(/CPF:\s*([\d\.-]+)/i).replace(/\D/g, '');
+                const cpf = cpfBruto ? cpfBruto.replace(/^(\d{3})(\d{3})(\d{3})(\d{2})$/, "$1.$2.$3-$4") : 'N/D';
+
+                const nomeSocio = cpfSocioMatch ? cpfSocioMatch[2].trim() : (getCampoCaixa(/Nome:\s*([^\n\r]+)/i) || 'N/D');
+
+                const nascMatch = linha.match(/NASC:\s*([\d\/]+)/i);
+                const dataNasc = nascMatch ? nascMatch[1] : 'N/D';
+
+                const telGovDesmascarado = getCampoCaixa(/GOV DESMASCARADO:\s*([^\n\r]+)/i);
+                const telCaixa = getCampoCaixa(/TELEFONES DENTRO DA CAIXA:\s*([^\n\r]+)/i);
+                const telefone = telGovDesmascarado || telCaixa || 'N/D';
+
+                let palavrasNome = nomeSocio.split(' ').filter(p => p.length > 2 && !['DOS', 'DAS', 'E', 'DE', 'DO'].includes(p));
+                let iniciais = palavrasNome.length >= 2 ? (palavrasNome[0].substring(0, 2) + palavrasNome[1].substring(0, 2)) : nomeSocio.substring(0, 4);
+                let usuarioSugerido = (iniciais.replace(/[^a-zA-Z]/g, '') + '11714').toUpperCase();
+
+                return `AGÊNCIA: ${agencia}
+CONTA: ${conta}
+CNPJ: ${cnpj}
+RAZÃO SOCIAL: ${razaoSocial}
+CPF USUÁRIO MASTER: ${cpf}
+NOME USUÁRIO MASTER: ${nomeSocio}
+DATA DE NASCIMENTO: ${dataNasc}
+TELEFONE: ${telefone}
+USUÁRIOS: ${usuarioSugerido}`;
+            }
+
+            // 2. PROCESSAMENTO PARA FICHAS EM LINHA ÚNICA
             const matchAgenciaConta = linha.match(/^\[([^\]]+)\]/);
             const agenciaConta = matchAgenciaConta ? matchAgenciaConta[1].trim() : '';
 
-            // 2. Extrai CNPJ (14 dígitos brutos ou formatados)
             const cnpjBruto = linha.match(/\[(\d{14})\]/)?.[1] || linha.match(/\[(\d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2})\]/)?.[1] || '';
             const cnpj = cnpjBruto ? cnpjBruto.replace(/\D/g, '').replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, "$1.$2.$3/$4-$5") : '';
 
-            // 3. Extrai Empresa / Razão Social
             const empresa = linha.match(/\[([^\]]+)\]\s*-\s*CPF:/)?.[1] || '';
 
-            // 4. Extrai e formata CPF
             const cpfBruto = linha.match(/CPF:\s*([\d\.-]+)/)?.[1]?.replace(/\D/g, '') || '';
             const cpf = cpfBruto ? cpfBruto.replace(/^(\d{3})(\d{3})(\d{3})(\d{2})$/, "$1.$2.$3-$4") : '';
 
-            // 5. Outros campos genéricos
             const nome = linha.match(/Nome:\s*([^|]+)/)?.[1]?.trim() || '';
             const usuario = linha.match(/Usuário:\s*([^|]+)/)?.[1]?.replace(/[\[\]]/g, '').trim() || '';
 
-            // VERIFICA SE É O MODELO DE FICHA ANTIGO OU NOVO
             const ehModeloAntigo = linha.includes('Renda:') || linha.includes('Data de nascimento:') || linha.includes('E-mail GOV:');
 
             if (ehModeloAntigo) {
-                // Formatação para fichas ANTIGAS
                 let renda = linha.match(/Renda:\s*([^|]+)/)?.[1]?.trim() || '';
                 let dataNasc = linha.match(/Data de nascimento:\s*([^|]+)/)?.[1]?.trim() || '';
                 let telGov = linha.match(/Telefone GOV:\s*([^|]+)/)?.[1]?.trim() || '';
@@ -278,7 +314,6 @@
 
                 return saidaAntiga.join('\n');
             } else {
-                // Formatação para fichas NOVAS (com Emojis)
                 const rotuloTel = linha.includes('Telefone API:') ? 'Telefone API' : 'Telefone GOV';
                 const telefone = linha.match(/Telefone (?:GOV|API):\s*([^|]+)/)?.[1]?.trim() || 'N/D';
                 const telefoneFinal = linha.match(/Telefone (?:GOV|API) final:\s*([^|]+)/)?.[1]?.trim() || 'N/D';
@@ -324,12 +359,18 @@
                 return;
             }
 
-            texto = texto.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
-            let linhas = texto.split('\n').map(l => l.trim()).filter(l => l !== '');
+            let blocos = [];
+            if (texto.includes('CNPJ CORRENTISTA CAIXA PJ')) {
+                blocos = texto.split(/CNPJ CORRENTISTA CAIXA PJ/i).filter(b => b.trim() !== '').map(b => 'CNPJ CORRENTISTA CAIXA PJ' + b);
+            } else {
+                texto = texto.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+                blocos = texto.split('\n').map(l => l.trim()).filter(l => l !== '');
+            }
+
             let resultadoHTML = '';
 
-            linhas.forEach((linha, index) => {
-                let blocoFormatado = formatarLinhaFicha(linha);
+            blocos.forEach((bloco, index) => {
+                let blocoFormatado = formatarLinhaFicha(bloco);
 
                 if (index > 0) {
                     resultadoHTML += `<div class="border-t border-borderCol my-4 pt-4 text-center text-xs text-gray-500 font-mono">=========================================================</div>`;
