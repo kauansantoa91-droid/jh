@@ -78,7 +78,7 @@
                     <i class="fa-solid fa-wand-magic-sparkles text-neonBlue"></i> Conversor Inteligente de Fichas em Lote
                 </h2>
                 <p class="text-sm text-gray-400 mb-4">
-                    Cole abaixo suas fichas. O sistema detecta se o telefone é API ou GOV e rotula corretamente na saída.
+                    Cole abaixo suas fichas. O sistema detecta automaticamente se a ficha é do modelo antigo ou novo e aplica a formatação correta.
                 </p>
 
                 <div class="space-y-3">
@@ -229,46 +229,85 @@
             }
         }
 
-        // Função que retorna tanto o rótulo quanto o número correto
-        function extrairInfoTelefone(linha) {
-            // 1. Se tem Telefone API explícito com número válido
-            const matchApi = linha.match(/Telefone\s+API:\s*([\d\(\)\s\-+]+)/i);
-            if (matchApi && matchApi[1]) {
-                const limpo = matchApi[1].replace(/\D/g, '');
-                if (limpo.length >= 8) {
-                    return { label: 'TELEFONE API', numero: limpo };
-                }
-            }
+        // Função inteligente para formatar fichas antigas e novas
+        function formatarLinhaFicha(linha) {
+            // 1. Extrai Agência e Conta do primeiro par de colchetes
+            const matchAgenciaConta = linha.match(/^\[([^\]]+)\]/);
+            const agenciaConta = matchAgenciaConta ? matchAgenciaConta[1].trim() : '';
 
-            // 2. Se tem Telefone GOV sem asteriscos
-            const matchGov = linha.match(/Telefone\s+GOV:\s*([^\s\|]+)/i);
-            if (matchGov && matchGov[1] && !matchGov[1].includes('*')) {
-                const limpo = matchGov[1].replace(/\D/g, '');
-                if (limpo.length >= 8) {
-                    return { label: 'TELEFONE', numero: limpo };
-                }
-            }
+            // 2. Extrai CNPJ (14 dígitos brutos ou formatados)
+            const cnpjBruto = linha.match(/\[(\d{14})\]/)?.[1] || linha.match(/\[(\d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2})\]/)?.[1] || '';
+            const cnpj = cnpjBruto ? cnpjBruto.replace(/\D/g, '').replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, "$1.$2.$3/$4-$5") : '';
 
-            // 3. Campo genérico Telefone: (sem asteriscos)
-            const matchPadrao = linha.match(/(?:^|\|)\s*Telefone:\s*([^\s\|]+)/i);
-            if (matchPadrao && matchPadrao[1] && !matchPadrao[1].includes('*')) {
-                const limpo = matchPadrao[1].replace(/\D/g, '');
-                if (limpo.length >= 8) {
-                    return { label: 'TELEFONE', numero: limpo };
-                }
-            }
+            // 3. Extrai Empresa / Razão Social
+            const empresa = linha.match(/\[([^\]]+)\]\s*-\s*CPF:/)?.[1] || '';
 
-            // 4. Se tiver apenas Telefone GOV final (mascarado)
-            const matchQualquerGov = linha.match(/Telefone\s+GOV(?:\s+final)?:\s*([^\s\|]+)/i);
-            if (matchQualquerGov && matchQualquerGov[1]) {
-                return { label: 'TELEFONE GOV FINAL', numero: matchQualquerGov[1].trim() };
-            }
+            // 4. Extrai e formata CPF
+            const cpfBruto = linha.match(/CPF:\s*([\d\.-]+)/)?.[1]?.replace(/\D/g, '') || '';
+            const cpf = cpfBruto ? cpfBruto.replace(/^(\d{3})(\d{3})(\d{3})(\d{2})$/, "$1.$2.$3-$4") : '';
 
-            return { label: 'TELEFONE', numero: '41997622460' };
+            // 5. Outros campos genéricos
+            const nome = linha.match(/Nome:\s*([^|]+)/)?.[1]?.trim() || '';
+            const usuario = linha.match(/Usuário:\s*([^|]+)/)?.[1]?.replace(/[\[\]]/g, '').trim() || '';
+
+            // VERIFICA SE É O MODELO DE FICHA ANTIGO OU NOVO
+            const ehModeloAntigo = linha.includes('Renda:') || linha.includes('Data de nascimento:') || linha.includes('E-mail GOV:');
+
+            if (ehModeloAntigo) {
+                // Formatação para fichas ANTIGAS
+                let renda = linha.match(/Renda:\s*([^|]+)/)?.[1]?.trim() || '';
+                let dataNasc = linha.match(/Data de nascimento:\s*([^|]+)/)?.[1]?.trim() || '';
+                let telGov = linha.match(/Telefone GOV:\s*([^|]+)/)?.[1]?.trim() || '';
+                let telGovFinal = linha.match(/Telefone GOV final:\s*([^|]+)/)?.[1]?.trim() || '';
+                let telApi = linha.match(/Telefone API:\s*([^|]+)/)?.[1]?.trim() || '';
+                let emailGov = linha.match(/E-mail GOV:\s*([^|]+)/)?.[1]?.trim() || '';
+
+                let saidaAntiga = [];
+                if (agenciaConta) saidaAntiga.push(`AGÊNCIA/CONTA: ${agenciaConta}`);
+                if (cnpj) saidaAntiga.push(`CNPJ: ${cnpj}`);
+                if (empresa) saidaAntiga.push(`RAZÃO SOCIAL: ${empresa}`);
+                if (cpf) saidaAntiga.push(`CPF USUÁRIO MASTER: ${cpf}`);
+                if (nome) saidaAntiga.push(`NOME USUÁRIO MASTER: ${nome}`);
+                if (renda) saidaAntiga.push(`RENDA: ${renda}`);
+                if (dataNasc) saidaAntiga.push(`DATA DE NASCIMENTO: ${dataNasc}`);
+                if (usuario) saidaAntiga.push(`USUÁRIOS: ${usuario}`);
+                if (telGov) saidaAntiga.push(`TELEFONE GOV: ${telGov}`);
+                if (telGovFinal) saidaAntiga.push(`TELEFONE GOV FINAL: ${telGovFinal}`);
+                if (telApi) saidaAntiga.push(`TELEFONE API: ${telApi}`);
+                if (emailGov) saidaAntiga.push(`E-MAIL GOV: ${emailGov}`);
+
+                return saidaAntiga.join('\n');
+            } else {
+                // Formatação para fichas NOVAS (com Emojis)
+                const rotuloTel = linha.includes('Telefone API:') ? 'Telefone API' : 'Telefone GOV';
+                const telefone = linha.match(/Telefone (?:GOV|API):\s*([^|]+)/)?.[1]?.trim() || 'N/D';
+                const telefoneFinal = linha.match(/Telefone (?:GOV|API) final:\s*([^|]+)/)?.[1]?.trim() || 'N/D';
+                const email = linha.match(/E-mail:\s*([^|]+)/)?.[1]?.trim() || 'N/D';
+                const situacao = linha.match(/Situação:\s*([^|]+)/)?.[1]?.trim() || 'N/D';
+                const capital = linha.match(/Capital:\s*([^|]+)/)?.[1]?.trim() || 'N/D';
+                const cidadeUf = linha.match(/Cidade\/UF:\s*([^|]+)/)?.[1]?.trim() || 'N/D';
+                const cartoesPj = linha.match(/CARTOESPJ:\s*(\[[^\]]+\])/)?.[1] || 'N/D';
+                const status = linha.match(/Status:\s*(\[[^\]]+\])/)?.[1] || 'N/D';
+
+                return `🏦 Agência/Conta: ${agenciaConta || 'N/D'}
+🔢 CNPJ: ${cnpj || 'N/D'}
+🏢 Empresa: ${empresa || 'N/D'}
+🆔 CPF: ${cpf || 'N/D'}
+👤 Nome: ${nome || 'N/D'}
+🔑 Usuário: ${usuario || 'N/D'}
+📱 ${rotuloTel}: ${telefone}
+📋 ${rotuloTel} final: ${telefoneFinal}
+📧 E-mail: ${email}
+📋 Situação: ${situacao}
+💰 Capital: ${capital}
+📍 Cidade/UF: ${cidadeUf}
+💳 CARTOESPJ: ${cartoesPj}
+✅ Status: ${status}`;
+            }
         }
 
         function carregarExemplo() {
-            const exemplo = `[0895|136140-6] - [05737545000107] - [ENERCOL - ENERGETICA OESTE LTDA] - CPF: 31042740968 | Nome: DIETHER WERNINGHAUS | Renda: R$ 4228,71 | Data de nascimento: 11/09/1956 | Usuário: DWE00076 | Telefone GOV final: *********68 | E-mail GOV: dj****@wp******** | Telefone API: 47999793780`;
+            const exemplo = `[1464|436429] - [07433334000106] - [LANCHONETE E ESTACIONAMENTO RENER PARK LTDA] - CPF: 29545246855 | Nome: RENATO ARAUJO PEREIRA JUSTINO | Usuário: [N/D] | Telefone GOV: 11964761647 | Telefone GOV final: *********47 | E-mail: renatoperira159@gmail.com | Situação: ATIVA | Capital: R$ 200.000,00 | Cidade/UF: SAO PAULO/SP | CARTOESPJ: [ SIM ] | Status: [CONFIRMADO] | Endereço da agência: AVENIDA EDUARDO ROBERTO DAHER,, 97, 1- PAVIMENTO, SALA 1, CENTRO, ITAPECERICA DA SERRA/SP, CEP 06850-040`;
             document.getElementById('inputText').value = exemplo;
         }
 
@@ -290,57 +329,7 @@
             let resultadoHTML = '';
 
             linhas.forEach((linha, index) => {
-                const matchBrackets = linha.match(/\[(.*?)\]/g);
-                let agenciaConta = matchBrackets && matchBrackets[0] ? matchBrackets[0].replace(/[\[\]]/g, '') : '1781|42373-4';
-                let partesAc = agenciaConta.split('|');
-                let agencia = partesAc[0] || '1781';
-                let contaComDigito = partesAc[1] || '423734';
-                let conta = contaComDigito.replace('-', '');
-
-                let cnpj = matchBrackets && matchBrackets[1] ? matchBrackets[1].replace(/[\[\]]/g, '') : '37658271000149';
-                let razaoSocial = matchBrackets && matchBrackets[2] ? matchBrackets[2].replace(/[\[\]]/g, '') : 'EMPRESA LTDA';
-
-                const getField = (regex) => {
-                    const m = linha.match(regex);
-                    return m ? m[1].trim() : '';
-                };
-
-                let cpf = getField(/CPF:\s*([\d\.\-]+)/i).replace(/\D/g, '') || '07178698900';
-                let nome = getField(/Nome:\s*([^|]+)/i) || 'LAUDINEA FERREIRA';
-                let renda = getField(/Renda:\s*([^|]+)/i);
-                let dataNasc = getField(/Data de nascimento:\s*([\d\/]+)/i) || '05/10/1988';
-                
-                // Extração inteligente de Rótulo e Telefone
-                let infoTel = extrairInfoTelefone(linha);
-                
-                let usuariosExtraidos = '';
-                const matchPlural = linha.match(/Usu[aá]rios:\s*([^\n\|]+)/i);
-                const matchSingular = linha.match(/Usu[aá]rio:\s*([^\s\|]+)/i);
-
-                if (matchPlural && matchPlural[1]) {
-                    usuariosExtraidos = matchPlural[1].trim();
-                } else if (matchSingular && matchSingular[1] && matchSingular[1].toLowerCase() !== 'null') {
-                    usuariosExtraidos = matchSingular[1].trim();
-                } else {
-                    let palavrasNome = nome.split(' ').filter(p => p.length > 2 && !['DOS', 'DAS', 'E', 'DE', 'DO'].includes(p));
-                    let iniciais = '';
-                    if (palavrasNome.length >= 2) {
-                        iniciais = palavrasNome[0].substring(0, 2) + palavrasNome[1].substring(0, 2);
-                    } else {
-                        iniciais = nome.replace(/\s+/g, '').substring(0, 4);
-                    }
-                    usuariosExtraidos = iniciais.toUpperCase() + '11714';
-                }
-
-                let blocoFormatado = `AGÊNCIA: ${agencia}
-CONTA: ${conta}
-CNPJ: ${cnpj}
-RAZÃO SOCIAL: ${razaoSocial}
-CPF USUÁRIO MASTER: ${cpf}
-NOME USUÁRIO MASTER: ${nome}
-${renda ? `RENDA: ${renda}\n` : ''}DATA DE NASCIMENTO: ${dataNasc}
-${infoTel.label}: ${infoTel.numero}
-USUÁRIOS: ${usuariosExtraidos}`.replace(/\n{2,}/g, '\n').trim();
+                let blocoFormatado = formatarLinhaFicha(linha);
 
                 if (index > 0) {
                     resultadoHTML += `<div class="border-t border-borderCol my-4 pt-4 text-center text-xs text-gray-500 font-mono">=========================================================</div>`;
@@ -379,7 +368,7 @@ USUÁRIOS: ${usuariosExtraidos}`.replace(/\n{2,}/g, '\n').trim();
             const blocos = document.querySelectorAll('#outputContainer pre');
             let textoGeral = Array.from(blocos).map(b => b.innerText).join('\n\n=========================================================\n\n');
             navigator.clipboard.writeText(textoGeral).then(() => {
-                alert('Todas as fichas formatadas foram copias para a área de transferência!');
+                alert('Todas as fichas formatadas foram copiada para a área de transferência!');
             });
         }
 
@@ -540,66 +529,7 @@ USUÁRIOS: ${usuariosExtraidos}`.replace(/\n{2,}/g, '\n').trim();
         }
 
         function converterParaBlocos(linhas) {
-            let resultadoBlocos = '';
-            linhas.forEach((linha, index) => {
-                const matchBrackets = linha.match(/\[(.*?)\]/g);
-                let agenciaConta = matchBrackets && matchBrackets[0] ? matchBrackets[0].replace(/[\[\]]/g, '') : '1781|42373-4';
-                let partesAc = agenciaConta.split('|');
-                let agencia = partesAc[0] || '1781';
-                let contaComDigito = partesAc[1] || '423734';
-                let conta = contaComDigito.replace('-', '');
-
-                let cnpj = matchBrackets && matchBrackets[1] ? matchBrackets[1].replace(/[\[\]]/g, '') : '37658271000149';
-                let razaoSocial = matchBrackets && matchBrackets[2] ? matchBrackets[2].replace(/[\[\]]/g, '') : 'EMPRESA LTDA';
-
-                const getField = (regex) => {
-                    const m = linha.match(regex);
-                    return m ? m[1].trim() : '';
-                };
-
-                let cpf = getField(/CPF:\s*([\d\.\-]+)/i).replace(/\D/g, '') || '07178698900';
-                let nome = getField(/Nome:\s*([^|]+)/i) || 'LAUDINEA FERREIRA';
-                let renda = getField(/Renda:\s*([^|]+)/i);
-                let dataNasc = getField(/Data de nascimento:\s*([\d\/]+)/i) || '05/10/1988';
-                
-                // Extração inteligente de Rótulo e Telefone
-                let infoTel = extrairInfoTelefone(linha);
-                
-                let usuariosExtraidos = '';
-                const matchPlural = linha.match(/Usu[aá]rios:\s*([^\n\|]+)/i);
-                const matchSingular = linha.match(/Usu[aá]rio:\s*([^\s\|]+)/i);
-
-                if (matchPlural && matchPlural[1]) {
-                    usuariosExtraidos = matchPlural[1].trim();
-                } else if (matchSingular && matchSingular[1] && matchSingular[1].toLowerCase() !== 'null') {
-                    usuariosExtraidos = matchSingular[1].trim();
-                } else {
-                    let palavrasNome = nome.split(' ').filter(p => p.length > 2 && !['DOS', 'DAS', 'E', 'DE', 'DO'].includes(p));
-                    let iniciais = '';
-                    if (palavrasNome.length >= 2) {
-                        iniciais = palavrasNome[0].substring(0, 2) + palavrasNome[1].substring(0, 2);
-                    } else {
-                        iniciais = nome.replace(/\s+/g, '').substring(0, 4);
-                    }
-                    usuariosExtraidos = iniciais.toUpperCase() + '11714';
-                }
-
-                let blocoFormatado = `AGÊNCIA: ${agencia}
-CONTA: ${conta}
-CNPJ: ${cnpj}
-RAZÃO SOCIAL: ${razaoSocial}
-CPF USUÁRIO MASTER: ${cpf}
-NOME USUÁRIO MASTER: ${nome}
-${renda ? `RENDA: ${renda}\n` : ''}DATA DE NASCIMENTO: ${dataNasc}
-${infoTel.label}: ${infoTel.numero}
-USUÁRIOS: ${usuariosExtraidos}`.replace(/\n{2,}/g, '\n').trim();
-
-                if (index > 0) {
-                    resultadoBlocos += '\n\n=========================================================\n\n';
-                }
-                resultadoBlocos += blocoFormatado;
-            });
-            return resultadoBlocos;
+            return linhas.map(linha => formatarLinhaFicha(linha)).join('\n\n=========================================================\n\n');
         }
 
         function puxarLote() {
