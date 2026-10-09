@@ -78,7 +78,7 @@
                     <i class="fa-solid fa-wand-magic-sparkles text-neonBlue"></i> Conversor Inteligente de Fichas em Lote
                 </h2>
                 <p class="text-sm text-gray-400 mb-4">
-                    Cole abaixo suas fichas. O sistema detecta automaticamente o modelo da ficha e aplica a formatação correta.
+                    Cole abaixo suas fichas. O sistema detecta automaticamente o tipo da ficha e aplica a formatação correta.
                 </p>
 
                 <div class="space-y-3">
@@ -229,10 +229,9 @@
             }
         }
 
-        // Função para formatar qualquer modelo de linha ou bloco de ficha
         function formatarLinhaFicha(linha) {
-            // 1. DETECÇÃO E PROCESSAMENTO PARA FICHA "CNPJ CORRENTISTA CAIXA PJ"
-            if (linha.includes('CNPJ CORRENTISTA CAIXA PJ') || linha.includes('TELEFONES DENTRO DA CAIXA') || linha.includes('SITUACAO CADASTRAL:')) {
+            // 1. FICHA MULTILINHA (EX: CAIXA PJ)
+            if (linha.includes('CNPJ CORRENTISTA CAIXA PJ') || linha.includes('TELEFONES DENTRO DA CAIXA') || linha.includes('SOCIO [')) {
                 const getCampoCaixa = (regex) => {
                     const m = linha.match(regex);
                     return m ? m[1].trim() : '';
@@ -258,10 +257,6 @@
                 const telCaixa = getCampoCaixa(/TELEFONES DENTRO DA CAIXA:\s*([^\n\r]+)/i);
                 const telefone = telGovDesmascarado || telCaixa || 'N/D';
 
-                let palavrasNome = nomeSocio.split(' ').filter(p => p.length > 2 && !['DOS', 'DAS', 'E', 'DE', 'DO'].includes(p));
-                let iniciais = palavrasNome.length >= 2 ? (palavrasNome[0].substring(0, 2) + palavrasNome[1].substring(0, 2)) : nomeSocio.substring(0, 4);
-                let usuarioSugerido = (iniciais.replace(/[^a-zA-Z]/g, '') + '11714').toUpperCase();
-
                 return `AGÊNCIA: ${agencia}
 CONTA: ${conta}
 CNPJ: ${cnpj}
@@ -269,67 +264,80 @@ RAZÃO SOCIAL: ${razaoSocial}
 CPF USUÁRIO MASTER: ${cpf}
 NOME USUÁRIO MASTER: ${nomeSocio}
 DATA DE NASCIMENTO: ${dataNasc}
-TELEFONE: ${telefone}
-USUÁRIOS: ${usuarioSugerido}`;
+TELEFONE: ${telefone}`;
             }
 
-            // 2. PROCESSAMENTO PARA FICHAS EM LINHA ÚNICA
-            const matchAgenciaConta = linha.match(/^\[([^\]]+)\]/);
-            const agenciaConta = matchAgenciaConta ? matchAgenciaConta[1].trim() : '';
+            // 2. FICHA ANTIGA COM RENDA / DATA DE NASCIMENTO / EMAIL GOV (FORMATO SEM EMOJIS)
+            const ehFichaAntiga = linha.includes('Renda:') || linha.includes('Data de nascimento:') || linha.includes('E-mail GOV:');
+
+            if (ehFichaAntiga) {
+                const matchAgenciaConta = linha.match(/^\[([^\]]+)\]/);
+                const agenciaConta = matchAgenciaConta ? matchAgenciaConta[1].trim() : 'N/D';
+
+                const cnpjBruto = linha.match(/\[(\d{14})\]/)?.[1] || linha.match(/\[(\d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2})\]/)?.[1] || '';
+                const cnpj = cnpjBruto ? cnpjBruto.replace(/\D/g, '').replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, "$1.$2.$3/$4-$5") : 'N/D';
+
+                const empresa = linha.match(/\[([^\]]+)\]\s*-\s*CPF:/)?.[1]?.trim() || 'N/D';
+
+                const cpfBruto = linha.match(/CPF:\s*([\d\.-]+)/)?.[1]?.replace(/\D/g, '') || '';
+                const cpf = cpfBruto ? cpfBruto.replace(/^(\d{3})(\d{3})(\d{3})(\d{2})$/, "$1.$2.$3-$4") : 'N/D';
+
+                const nome = linha.match(/Nome:\s*([^|]+)/)?.[1]?.trim() || 'N/D';
+                const renda = linha.match(/Renda:\s*([^|]+)/)?.[1]?.trim() || 'N/D';
+                const dataNasc = linha.match(/Data de nascimento:\s*([^|]+)/)?.[1]?.trim() || 'N/D';
+                const usuario = linha.match(/Usuário:\s*([^|]+)/)?.[1]?.replace(/[\[\]]/g, '').trim() || 'N/D';
+
+                const telGov = linha.match(/Telefone GOV:\s*([^|]+)/)?.[1]?.trim() || '';
+                const telGovFinal = linha.match(/Telefone GOV final:\s*([^|]+)/)?.[1]?.trim() || '';
+                const emailGov = linha.match(/E-mail GOV:\s*([^|]+)/)?.[1]?.trim() || '';
+
+                let saida = [];
+                saida.push(`AGÊNCIA/CONTA: ${agenciaConta}`);
+                saida.push(`CNPJ: ${cnpj}`);
+                saida.push(`RAZÃO SOCIAL: ${empresa}`);
+                saida.push(`CPF USUÁRIO MASTER: ${cpf}`);
+                saida.push(`NOME USUÁRIO MASTER: ${nome}`);
+                if (renda) saida.push(`RENDA: ${renda}`);
+                if (dataNasc) saida.push(`DATA DE NASCIMENTO: ${dataNasc}`);
+                saida.push(`USUÁRIOS: ${usuario}`);
+                if (telGov) saida.push(`TELEFONE GOV: ${telGov}`);
+                if (telGovFinal) saida.push(`TELEFONE GOV FINAL: ${telGovFinal}`);
+                if (emailGov) saida.push(`E-MAIL GOV: ${emailGov}`);
+
+                return saida.join('\n');
+            }
+
+            // 3. FICHA NOVA COM EMOJIS (SITUAÇÃO, CAPITAL, CARTOESPJ, STATUS)
+            const agenciaConta = linha.match(/^\[([^\]]+)\]/)?.[1]?.trim() || 'N/D';
 
             const cnpjBruto = linha.match(/\[(\d{14})\]/)?.[1] || linha.match(/\[(\d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2})\]/)?.[1] || '';
-            const cnpj = cnpjBruto ? cnpjBruto.replace(/\D/g, '').replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, "$1.$2.$3/$4-$5") : '';
+            const cnpj = cnpjBruto ? cnpjBruto.replace(/\D/g, '').replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, "$1.$2.$3/$4-$5") : 'N/D';
 
-            const empresa = linha.match(/\[([^\]]+)\]\s*-\s*CPF:/)?.[1] || '';
+            const empresa = linha.match(/\[([^\]]+)\]\s*-\s*CPF:/)?.[1]?.trim() || 'N/D';
 
             const cpfBruto = linha.match(/CPF:\s*([\d\.-]+)/)?.[1]?.replace(/\D/g, '') || '';
-            const cpf = cpfBruto ? cpfBruto.replace(/^(\d{3})(\d{3})(\d{3})(\d{2})$/, "$1.$2.$3-$4") : '';
+            const cpf = cpfBruto ? cpfBruto.replace(/^(\d{3})(\d{3})(\d{3})(\d{2})$/, "$1.$2.$3-$4") : 'N/D';
 
-            const nome = linha.match(/Nome:\s*([^|]+)/)?.[1]?.trim() || '';
-            const usuario = linha.match(/Usuário:\s*([^|]+)/)?.[1]?.replace(/[\[\]]/g, '').trim() || '';
+            const nome = linha.match(/Nome:\s*([^|]+)/)?.[1]?.trim() || 'N/D';
+            const usuario = linha.match(/Usuário:\s*([^|]+)/)?.[1]?.replace(/[\[\]]/g, '').trim() || 'N/D';
 
-            const ehModeloAntigo = linha.includes('Renda:') || linha.includes('Data de nascimento:') || linha.includes('E-mail GOV:');
+            const rotuloTel = linha.includes('Telefone API:') ? 'Telefone API' : 'Telefone GOV';
+            const telefone = linha.match(/Telefone (?:GOV|API):\s*([^|]+)/)?.[1]?.trim() || 'N/D';
+            const telefoneFinal = linha.match(/Telefone (?:GOV|API) final:\s*([^|]+)/)?.[1]?.trim() || 'N/D';
 
-            if (ehModeloAntigo) {
-                let renda = linha.match(/Renda:\s*([^|]+)/)?.[1]?.trim() || '';
-                let dataNasc = linha.match(/Data de nascimento:\s*([^|]+)/)?.[1]?.trim() || '';
-                let telGov = linha.match(/Telefone GOV:\s*([^|]+)/)?.[1]?.trim() || '';
-                let telGovFinal = linha.match(/Telefone GOV final:\s*([^|]+)/)?.[1]?.trim() || '';
-                let telApi = linha.match(/Telefone API:\s*([^|]+)/)?.[1]?.trim() || '';
-                let emailGov = linha.match(/E-mail GOV:\s*([^|]+)/)?.[1]?.trim() || '';
+            const email = linha.match(/E-mail:\s*([^|]+)/)?.[1]?.trim() || 'N/D';
+            const situacao = linha.match(/Situação:\s*([^|]+)/)?.[1]?.trim() || 'N/D';
+            const capital = linha.match(/Capital:\s*([^|]+)/)?.[1]?.trim() || 'N/D';
+            const cidadeUf = linha.match(/Cidade\/UF:\s*([^|]+)/)?.[1]?.trim() || 'N/D';
+            const cartoesPj = linha.match(/CARTOESPJ:\s*(\[[^\]]+\])/)?.[1]?.trim() || 'N/D';
+            const status = linha.match(/Status:\s*(\[[^\]]+\])/)?.[1]?.trim() || 'N/D';
 
-                let saidaAntiga = [];
-                if (agenciaConta) saidaAntiga.push(`AGÊNCIA/CONTA: ${agenciaConta}`);
-                if (cnpj) saidaAntiga.push(`CNPJ: ${cnpj}`);
-                if (empresa) saidaAntiga.push(`RAZÃO SOCIAL: ${empresa}`);
-                if (cpf) saidaAntiga.push(`CPF USUÁRIO MASTER: ${cpf}`);
-                if (nome) saidaAntiga.push(`NOME USUÁRIO MASTER: ${nome}`);
-                if (renda) saidaAntiga.push(`RENDA: ${renda}`);
-                if (dataNasc) saidaAntiga.push(`DATA DE NASCIMENTO: ${dataNasc}`);
-                if (usuario) saidaAntiga.push(`USUÁRIOS: ${usuario}`);
-                if (telGov) saidaAntiga.push(`TELEFONE GOV: ${telGov}`);
-                if (telGovFinal) saidaAntiga.push(`TELEFONE GOV FINAL: ${telGovFinal}`);
-                if (telApi) saidaAntiga.push(`TELEFONE API: ${telApi}`);
-                if (emailGov) saidaAntiga.push(`E-MAIL GOV: ${emailGov}`);
-
-                return saidaAntiga.join('\n');
-            } else {
-                const rotuloTel = linha.includes('Telefone API:') ? 'Telefone API' : 'Telefone GOV';
-                const telefone = linha.match(/Telefone (?:GOV|API):\s*([^|]+)/)?.[1]?.trim() || 'N/D';
-                const telefoneFinal = linha.match(/Telefone (?:GOV|API) final:\s*([^|]+)/)?.[1]?.trim() || 'N/D';
-                const email = linha.match(/E-mail:\s*([^|]+)/)?.[1]?.trim() || 'N/D';
-                const situacao = linha.match(/Situação:\s*([^|]+)/)?.[1]?.trim() || 'N/D';
-                const capital = linha.match(/Capital:\s*([^|]+)/)?.[1]?.trim() || 'N/D';
-                const cidadeUf = linha.match(/Cidade\/UF:\s*([^|]+)/)?.[1]?.trim() || 'N/D';
-                const cartoesPj = linha.match(/CARTOESPJ:\s*(\[[^\]]+\])/)?.[1] || 'N/D';
-                const status = linha.match(/Status:\s*(\[[^\]]+\])/)?.[1] || 'N/D';
-
-                return `🏦 Agência/Conta: ${agenciaConta || 'N/D'}
-🔢 CNPJ: ${cnpj || 'N/D'}
-🏢 Empresa: ${empresa || 'N/D'}
-🆔 CPF: ${cpf || 'N/D'}
-👤 Nome: ${nome || 'N/D'}
-🔑 Usuário: ${usuario || 'N/D'}
+            return `🏦 Agência/Conta: ${agenciaConta}
+🔢 CNPJ: ${cnpj}
+🏢 Empresa: ${empresa}
+🆔 CPF: ${cpf}
+👤 Nome: ${nome}
+🔑 Usuário: ${usuario}
 📱 ${rotuloTel}: ${telefone}
 📋 ${rotuloTel} final: ${telefoneFinal}
 📧 E-mail: ${email}
@@ -338,7 +346,6 @@ USUÁRIOS: ${usuarioSugerido}`;
 📍 Cidade/UF: ${cidadeUf}
 💳 CARTOESPJ: ${cartoesPj}
 ✅ Status: ${status}`;
-            }
         }
 
         function carregarExemplo() {
@@ -409,7 +416,7 @@ USUÁRIOS: ${usuarioSugerido}`;
             const blocos = document.querySelectorAll('#outputContainer pre');
             let textoGeral = Array.from(blocos).map(b => b.innerText).join('\n\n=========================================================\n\n');
             navigator.clipboard.writeText(textoGeral).then(() => {
-                alert('Todas as fichas formatadas foram copiada para a área de transferência!');
+                alert('Todas as fichas formatadas foram copias para a área de transferência!');
             });
         }
 
